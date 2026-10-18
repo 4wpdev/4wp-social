@@ -1,0 +1,8 @@
+{
+  "name": "4wpdev/4wp-social",
+  "type": "wordpress-plugin",
+  "require": {
+    "php": ">=8.0",
+    "composer/installers": "^2.0"
+  }
+}
