@@ -1,0 +1,176 @@
+/* Post video block + single video layout (video left, scrollable text right). */
+
+.wp-block-forwp-social-post-video {
+	--forwp-post-video-max: 400px;
+	width: 100%;
+	max-width: var(--forwp-post-video-max);
+	margin-inline: auto;
+}
+
+.wp-block-forwp-social-post-video figure {
+	margin: 0;
+}
+
+.wp-block-forwp-social-post-video video,
+.wp-block-forwp-social-post-video iframe {
+	display: block;
+	width: 100%;
+	height: auto;
+	border: 0;
+	border-radius: 16px;
+	background: #000;
+}
+
+.wp-block-forwp-social-post-video.is-shorts video,
+.wp-block-forwp-social-post-video.is-shorts iframe {
+	aspect-ratio: 9 / 16;
+	max-height: calc(100vh - 140px);
+	object-fit: contain;
+}
+
+.wp-block-forwp-social-post-video.is-landscape {
+	max-width: none;
+}
+
+.wp-block-forwp-social-post-video.is-landscape video,
+.wp-block-forwp-social-post-video.is-landscape iframe {
+	aspect-ratio: 16 / 9;
+}
+
+.forwp-social-post-video-placeholder {
+	display: grid;
+	place-items: center;
+	width: 100%;
+	max-width: var(--forwp-post-video-max, 400px);
+	aspect-ratio: 9 / 16;
+	border-radius: 16px;
+	background: #1d2327;
+	color: #fff;
+	font-weight: 600;
+}
+
+/* Desktop: like a short on desktop — fixed-size player, description scrolls beside it. */
+@media (min-width: 900px) {
+	.forwp-video-single__stage {
+		--forwp-video-stage-h: min(calc(400px * 16 / 9), calc(100vh - 140px));
+		display: grid;
+		grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+		gap: clamp(32px, 4vw, 64px);
+		align-items: start;
+	}
+
+	.forwp-video-single__stage > * {
+		margin-block: 0 !important;
+	}
+
+	.forwp-video-single__stage > .wp-block-forwp-social-post-video {
+		position: sticky;
+		top: 96px;
+		margin-inline: 0;
+	}
+
+	.forwp-video-single__stage > .wp-block-forwp-social-post-video.is-shorts {
+		width: min(var(--forwp-post-video-max), calc(var(--forwp-video-stage-h) * 9 / 16));
+	}
+
+	.forwp-video-single__stage > .wp-block-forwp-social-post-video.is-landscape {
+		grid-column: 1 / -1;
+	}
+
+	.forwp-video-single__text {
+		max-height: var(--forwp-video-stage-h);
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding-right: 12px;
+		scrollbar-width: thin;
+	}
+
+	.forwp-video-single__stage > .is-landscape ~ .forwp-video-single__text {
+		max-height: none;
+		overflow: visible;
+	}
+}
+
+/* Card variant (archive, loops): poster + round play button; tap toggles play/pause. */
+.wp-block-forwp-social-post-video.is-card {
+	max-width: none;
+}
+
+.wp-block-forwp-social-post-video.is-card figure {
+	position: relative;
+}
+
+.wp-block-forwp-social-post-video.is-card video {
+	max-height: none;
+	object-fit: cover;
+}
+
+.forwp-post-video__toggle {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	width: 100%;
+	padding: 0;
+	border: 0;
+	border-radius: 16px;
+	background: transparent;
+	cursor: pointer;
+}
+
+.forwp-post-video__icon {
+	position: relative;
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: rgba(0, 0, 0, 0.55);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+	transition: transform 0.15s ease, opacity 0.2s ease, background-color 0.15s ease;
+}
+
+/* Play triangle. */
+.forwp-post-video__icon::before {
+	content: "";
+	position: absolute;
+	top: 50%;
+	left: 54%;
+	border-style: solid;
+	border-width: 12px 0 12px 20px;
+	border-color: transparent transparent transparent #fff;
+	transform: translate(-50%, -50%);
+}
+
+.forwp-post-video__toggle:hover .forwp-post-video__icon,
+.forwp-post-video__toggle:focus-visible .forwp-post-video__icon {
+	background: rgba(0, 0, 0, 0.75);
+	transform: scale(1.06);
+}
+
+.forwp-post-video__toggle:focus-visible {
+	outline: 3px solid #2271b1;
+	outline-offset: 2px;
+}
+
+/* Playing: pause bars, shown only on hover/focus so the video stays clean. */
+.is-playing .forwp-post-video__icon {
+	opacity: 0;
+}
+
+.is-playing .forwp-post-video__toggle:hover .forwp-post-video__icon,
+.is-playing .forwp-post-video__toggle:focus-visible .forwp-post-video__icon {
+	opacity: 1;
+}
+
+.is-playing .forwp-post-video__icon::before {
+	left: 50%;
+	width: 20px;
+	height: 22px;
+	border: 0;
+	background: linear-gradient(90deg, #fff 0 7px, transparent 7px 13px, #fff 13px 20px);
+}
+
+@media (hover: none) {
+	.is-playing .forwp-post-video__icon {
+		opacity: 0;
+	}
+}
