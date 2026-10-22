@@ -8,6 +8,7 @@
 namespace ForWP\Social\Modules\Posting;
 
 use ForWP\Social\Contracts\Platform_Adapter_Interface;
+use ForWP\Social\Modules\Posting\Adapters\Bluesky_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\TikTok_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\YouTube_Adapter;
 
@@ -34,6 +35,7 @@ final class Adapter_Registry {
 		$map = array(
 			YouTube_Adapter::SLUG => new YouTube_Adapter(),
 			TikTok_Adapter::SLUG  => new TikTok_Adapter(),
+			Bluesky_Adapter::SLUG => new Bluesky_Adapter(),
 		);
 
 		/**

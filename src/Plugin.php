@@ -8,6 +8,7 @@
 namespace ForWP\Social;
 
 use ForWP\Social\Admin\Admin_Menu;
+use ForWP\Social\Auth\Bluesky_Account;
 use ForWP\Social\Auth\OAuth_Controller;
 use ForWP\Social\Core\Module_Registry;
 use ForWP\Social\Database\Schema;
@@ -55,6 +56,7 @@ final class Plugin {
 		Schema::maybe_upgrade();
 		Queue::register_interval();
 		OAuth_Controller::instance()->boot();
+		Bluesky_Account::boot();
 		Admin_Menu::instance()->boot();
 		Rest_Oauth::register();
 		Rest_Jobs::register();

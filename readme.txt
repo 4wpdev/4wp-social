@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.2.0
+Stable tag: 0.3.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -38,6 +38,7 @@ This plugin sends your video, captions, cover, title and description to the plat
 
 * **YouTube Data API v3** (Google) — upload, thumbnail, captions. [Terms](https://developers.google.com/youtube/terms/api-services-terms-of-service), [Privacy](https://policies.google.com/privacy).
 * **TikTok Content Posting API** — upload and status. [Terms](https://www.tiktok.com/legal/page/global/tik-tok-developer-terms-of-service/en), [Privacy](https://www.tiktok.com/legal/page/row/privacy-policy/en).
+* **Bluesky (AT Protocol, bsky.social)** — login with an app password, video upload and post. [Terms](https://bsky.social/about/support/tos), [Privacy](https://bsky.social/about/support/privacy-policy).
 
 OAuth tokens and app secrets are stored encrypted in your database.
 
@@ -52,6 +53,11 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.3.0 =
+* New platform: Bluesky (AT Protocol). Connect with a handle and an app password (no developer app); the password is verified before saving and stored encrypted.
+* Bluesky posting: text with link and hashtag facets (300-grapheme limit, hashtags added while they fit), video embed up to 100 MB with aspect ratio; public posts only.
+* Accounts tab: Bluesky card with connect, test connection and disconnect.
 
 = 0.2.0 =
 * Video module: video post type, series taxonomy and tags (filled from the package), SRT captions.

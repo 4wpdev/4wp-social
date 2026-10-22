@@ -3,7 +3,7 @@
  * Plugin Name:       4WP Social
  * Plugin URI:        https://4wp.dev/plugin/4wp-social/
  * Description:       Connect WordPress with social platforms: share (visitors), posting (cross-post videos to YouTube and TikTok via API) and feeds.
- * Version:           0.2.0
+ * Version:           0.3.0
  * Requires at least: 6.4
  * Tested up to:      7.1
  * Requires PHP:      8.0
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'FORWP_SOCIAL_VERSION', '0.2.0' );
+define( 'FORWP_SOCIAL_VERSION', '0.3.0' );
 define( 'FORWP_SOCIAL_FILE', __FILE__ );
 define( 'FORWP_SOCIAL_PATH', plugin_dir_path( __FILE__ ) );
 define( 'FORWP_SOCIAL_URL', plugin_dir_url( __FILE__ ) );
