@@ -130,20 +130,22 @@ final class Posting_Service {
 			}
 		}
 
-		$keys   = null === $platforms ? Package_Reader::api_platforms( $package ) : $platforms;
-		$run_at = time() + ( $force ? 0 : Package_Reader::delay_seconds( $package ) );
-		$done   = $this->published_map( $post_id );
-		$report = array();
+		$keys     = null === $platforms ? Package_Reader::api_platforms( $package ) : $platforms;
+		$run_at   = time() + ( $force ? 0 : Package_Reader::delay_seconds( $package ) );
+		$done     = $this->published_map( $post_id );
+		$borrowed = Package_Reader::borrowed_item( Package_Importer::snapshot( $post_id ) );
+		$report   = array();
 
 		foreach ( $keys as $platform ) {
 			$entry  = $package['platforms'][ $platform ] ?? null;
 			$reason = '';
 
-			if ( ! is_array( $entry ) ) {
+			// Not in meta.json: still goes out with the package video (Package_Reader::borrowed_item()).
+			if ( ! is_array( $entry ) && null === $borrowed ) {
 				$reason = 'not_declared';
 			} elseif ( ! Adapter_Registry::get( $platform ) ) {
 				$reason = 'no_adapter';
-			} elseif ( ! $force && ( isset( $done[ $platform ] ) || 'posted' === ( $entry['status'] ?? '' ) ) ) {
+			} elseif ( ! $force && ( isset( $done[ $platform ] ) || 'posted' === ( is_array( $entry ) ? ( $entry['status'] ?? '' ) : '' ) ) ) {
 				$reason = 'already_posted';
 			} elseif ( $this->has_active_job( $post_id, $platform ) ) {
 				$reason = 'in_queue';

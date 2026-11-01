@@ -128,16 +128,21 @@
 				force: $box.find( '.forwp-social-force' ).is( ':checked' ),
 			},
 		} ).then( function ( report ) {
+			var reasons = i18n.reasons || {};
 			var lines = Object.keys( report ).map( function ( key ) {
 				var row = report[ key ];
-				return key + ': ' + ( row.job_id ? i18n.queued : i18n.skipped + ' (' + row.skipped + ')' );
+				return key + ': ' + ( row.job_id ? i18n.queued : i18n.skipped + ': ' + ( reasons[ row.skipped ] || row.skipped ) );
 			} );
 			$out.html( lines.map( function ( line ) {
 				return $( '<div/>' ).text( line ).prop( 'outerHTML' );
 			} ).join( '' ) );
 			Object.keys( report ).forEach( function ( key ) {
+				var $status = $box.find( '.forwp-social-status[data-platform="' + key + '"]' );
 				if ( report[ key ].job_id ) {
-					$box.find( '.forwp-social-status[data-platform="' + key + '"]' ).attr( 'data-status', 'queued' ).text( 'queued' );
+					$status.attr( 'data-status', 'queued' ).text( 'queued' ).attr( 'title', '' );
+				} else if ( 'already_posted' !== report[ key ].skipped && 'published' !== $status.attr( 'data-status' ) ) {
+					// Next to the platform too, not only in the result lines.
+					$status.attr( 'data-status', 'skipped' ).text( i18n.skippedShort ).attr( 'title', reasons[ report[ key ].skipped ] || report[ key ].skipped );
 				}
 			} );
 			syncButton( $box );

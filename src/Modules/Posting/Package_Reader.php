@@ -64,6 +64,29 @@ final class Package_Reader implements Media_Source_Interface {
 	}
 
 	/**
+	 * A platform missing from meta.json reuses the package video of another platform,
+	 * with the post's own title and excerpt + link as the copy.
+	 *
+	 * @param array<string, mixed> $snapshot Platforms snapshot (Package_Importer::snapshot()).
+	 * @return array<string, mixed>|null Null when no platform has a video.
+	 */
+	public static function borrowed_item( array $snapshot ): ?array {
+		foreach ( $snapshot as $item ) {
+			if ( is_array( $item ) && ! empty( $item['video_id'] ) ) {
+				return array_merge(
+					array_intersect_key( $item, array_flip( array( 'video_id', 'captions_id', 'captions_name', 'cover_id' ) ) ),
+					array(
+						'entry' => array(),
+						'copy'  => array(),
+					)
+				);
+			}
+		}
+
+		return null;
+	}
+
+	/**
 	 * Seconds to wait after publishing the original (meta.json republish.* wins over settings).
 	 *
 	 * @param array<string, mixed> $package meta.json data.
@@ -95,18 +118,18 @@ final class Package_Reader implements Media_Source_Interface {
 		}
 
 		$snapshot = Package_Importer::snapshot( $post_id );
-		if ( ! isset( $snapshot[ $platform ] ) && $with_media ) {
+		if ( empty( $snapshot ) && $with_media ) {
 			$imported = ( new Package_Importer() )->import( $post_id );
 			if ( is_wp_error( $imported ) ) {
 				return $imported;
 			}
 			$snapshot = Package_Importer::snapshot( $post_id );
 		}
-		if ( ! isset( $snapshot[ $platform ] ) || ! is_array( $snapshot[ $platform ] ) ) {
+		$item = is_array( $snapshot[ $platform ] ?? null ) ? $snapshot[ $platform ] : self::borrowed_item( $snapshot );
+		if ( null === $item ) {
 			return new WP_Error( 'forwp_social_not_declared', __( 'meta.json has no api entry for this platform.', '4wp-social' ) );
 		}
 
-		$item  = $snapshot[ $platform ];
 		$entry = is_array( $item['entry'] ?? null ) ? $item['entry'] : array();
 		$copy  = array_merge( Platform_Copy_Parser::parse( '' ), is_array( $item['copy'] ?? null ) ? $item['copy'] : array() );
 
