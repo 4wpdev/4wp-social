@@ -73,7 +73,7 @@ final class Http {
 			$url,
 			array(
 				'headers' => array_merge( array( 'Content-Type' => 'application/json; charset=UTF-8' ), $headers ),
-				'body'    => (string) wp_json_encode( $payload ),
+				'body'    => array() === $payload ? '' : (string) wp_json_encode( $payload ),
 			)
 		);
 	}
