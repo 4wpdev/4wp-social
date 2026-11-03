@@ -75,6 +75,10 @@ final class Package_Importer {
 				$name                          = basename( (string) ( $entry[ $key ] ?? '' ) );
 				$parts[ $platform . ':' . $key ] = $name . '#' . ( $files[ $name ] ?? 0 );
 			}
+			// Snapshots made before the platform became an article platform have no text: import them again.
+			if ( Adapter_Registry::is_article( $platform ) ) {
+				$parts[ $platform . ':format' ] = 'article';
+			}
 		}
 
 		return md5( (string) wp_json_encode( $parts ) );
@@ -118,10 +122,18 @@ final class Package_Importer {
 
 		foreach ( Package_Reader::api_platforms( $package ) as $platform ) {
 			$entry = $package['platforms'][ $platform ];
+			$text  = $this->read_text( $post_id, (string) ( $entry['file'] ?? '' ) );
 			$item  = array(
 				'entry' => $entry,
-				'copy'  => $this->read_copy( $post_id, (string) ( $entry['file'] ?? '' ) ),
+				'copy'  => Platform_Copy_Parser::parse( $text ),
 			);
+
+			if ( Adapter_Registry::is_article( $platform ) ) {
+				$item['article_text'] = $text;
+				if ( '' === trim( $text ) ) {
+					$errors[] = $platform . ' file: ' . __( 'the article text was not found.', '4wp-social' );
+				}
+			}
 
 			foreach ( self::MEDIA_KEYS as $key ) {
 				$name = basename( str_replace( '\\', '/', (string) ( $entry[ $key ] ?? '' ) ) );
@@ -172,17 +184,16 @@ final class Package_Importer {
 	}
 
 	/**
-	 * Parsed platform copy file.
+	 * Platform text file.
 	 *
 	 * @param int    $post_id Post id.
 	 * @param string $name    File name ('' = none).
-	 * @return array{title: string, description: string, caption: string, tags: array<int, string>}
 	 */
-	private function read_copy( int $post_id, string $name ): array {
+	private function read_text( int $post_id, string $name ): string {
 		$name = basename( str_replace( '\\', '/', $name ) );
 		$text = '' !== $name ? apply_filters( 'forwp_drive_package_file', null, $post_id, $name ) : null;
 
-		return Platform_Copy_Parser::parse( is_string( $text ) ? $text : '' );
+		return is_string( $text ) ? $text : '';
 	}
 
 	/**

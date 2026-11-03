@@ -125,7 +125,8 @@ final class Package_Reader implements Media_Source_Interface {
 			}
 			$snapshot = Package_Importer::snapshot( $post_id );
 		}
-		$item = is_array( $snapshot[ $platform ] ?? null ) ? $snapshot[ $platform ] : self::borrowed_item( $snapshot );
+		$is_article = Adapter_Registry::is_article( $platform );
+		$item       = is_array( $snapshot[ $platform ] ?? null ) ? $snapshot[ $platform ] : ( $is_article ? null : self::borrowed_item( $snapshot ) );
 		if ( null === $item ) {
 			return new WP_Error( 'forwp_social_not_declared', __( 'meta.json has no api entry for this platform.', '4wp-social' ) );
 		}
@@ -155,8 +156,15 @@ final class Package_Reader implements Media_Source_Interface {
 					$data[ $key . '_path' ] = (string) get_attached_file( $id );
 				}
 			}
-			if ( empty( $data['video_path'] ) || ! is_readable( $data['video_path'] ) ) {
+			if ( ! $is_article && ( empty( $data['video_path'] ) || ! is_readable( $data['video_path'] ) ) ) {
 				return new WP_Error( 'forwp_social_no_video', __( 'The platform video was not imported into the Media Library.', '4wp-social' ) );
+			}
+		}
+
+		if ( $is_article ) {
+			$data = self::with_article( $data, $item, $post_id, $excerpt );
+			if ( is_wp_error( $data ) ) {
+				return $data;
 			}
 		}
 
@@ -172,6 +180,48 @@ final class Package_Reader implements Media_Source_Interface {
 		$filtered = apply_filters( 'forwp_social_media_package', $media, $post_id, $platform );
 
 		return $filtered instanceof Media_Package ? $filtered : $media;
+	}
+
+	/**
+	 * Add the article from the package text file: its own fields win over the entry and the post.
+	 *
+	 * @param array<string, mixed> $data    Package fields.
+	 * @param array<string, mixed> $item    Snapshot item.
+	 * @param int                  $post_id Post id.
+	 * @param string               $excerpt Post excerpt.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	private static function with_article( array $data, array $item, int $post_id, string $excerpt ) {
+		$permalink = (string) get_permalink( $post_id );
+		$parsed    = Article_Parser::parse(
+			(string) ( $item['article_text'] ?? '' ),
+			array(
+				'{{original.url}}'   => $permalink,
+				'{{original.title}}' => get_the_title( $post_id ),
+			)
+		);
+		if ( '' === $parsed['body'] ) {
+			return new WP_Error( 'forwp_social_no_article', __( 'The article text file of this platform is missing or empty.', '4wp-social' ) );
+		}
+
+		$fields = $parsed['fields'];
+		$entry  = $data['entry'];
+		$cover  = (int) ( $item['cover_id'] ?? 0 );
+
+		$data['title']       = self::first_filled( $parsed['title'], (string) $data['title'] );
+		$data['description'] = self::first_filled( (string) ( $fields['description'] ?? '' ), (string) ( $entry['description'] ?? '' ), $excerpt );
+		if ( ! empty( $fields['tags'] ) ) {
+			$data['tags'] = array_map( 'trim', explode( ',', trim( $fields['tags'], '[] ' ) ) );
+		}
+		$data['article'] = array(
+			'body'          => $parsed['body'],
+			'canonical_url' => self::first_filled( (string) ( $fields['canonical_url'] ?? '' ), $permalink ),
+			'main_image'    => self::first_filled( (string) ( $fields['main_image'] ?? '' ), (string) ( $fields['cover_image'] ?? '' ), $cover ? (string) wp_get_attachment_url( $cover ) : '' ),
+			'series'        => self::first_filled( (string) ( $fields['series'] ?? '' ), (string) ( $entry['series'] ?? '' ) ),
+			'draft'         => 'false' === strtolower( (string) ( $fields['published'] ?? '' ) ),
+		);
+
+		return $data;
 	}
 
 	/**

@@ -240,3 +240,5 @@ $forwp_social_icons   = array(
 <?php endforeach; ?>
 
 <?php require FORWP_SOCIAL_PATH . 'views/partials/account-bluesky.php'; ?>
+
+<?php require FORWP_SOCIAL_PATH . 'views/partials/account-devto.php'; ?>

@@ -12,7 +12,7 @@ use ForWP\Social\Contracts\Module_Interface;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * MVP: YouTube, TikTok and Bluesky video cross-posting through the platform APIs.
+ * YouTube, TikTok and Bluesky video and DEV.to article cross-posting through the platform APIs.
  */
 final class Posting_Module implements Module_Interface {
 
@@ -27,7 +27,7 @@ final class Posting_Module implements Module_Interface {
 	}
 
 	public function get_description(): string {
-		return __( 'Publish your posts to social platforms: video cross-posting to YouTube, TikTok and Bluesky from a meta.json package.', '4wp-social' );
+		return __( 'Publish your posts to social platforms: video to YouTube, TikTok and Bluesky, articles to DEV.to, from a meta.json package.', '4wp-social' );
 	}
 
 	public function is_implemented(): bool {

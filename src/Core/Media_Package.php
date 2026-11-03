@@ -46,6 +46,7 @@ final class Media_Package {
 			'cover_path'        => '',
 			'cover_ms'          => 0,
 			'temp_files'        => array(),
+			'article'           => array(),
 		);
 	}
 
@@ -120,6 +121,15 @@ final class Media_Package {
 
 	public function cover_path(): string {
 		return (string) $this->data['cover_path'];
+	}
+
+	/**
+	 * Text article: body, canonical_url, main_image, series, draft.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function article(): array {
+		return is_array( $this->data['article'] ) ? $this->data['article'] : array();
 	}
 
 	public function cover_ms(): int {

@@ -39,7 +39,7 @@ final class Abilities {
 			self::CATEGORY,
 			array(
 				'label'       => __( '4WP Social', '4wp-social' ),
-				'description' => __( 'Cross-post videos to social platforms and read publishing status.', '4wp-social' ),
+				'description' => __( 'Cross-post videos and articles to social platforms and read publishing status.', '4wp-social' ),
 			)
 		);
 	}
@@ -113,7 +113,7 @@ final class Abilities {
 			'forwp-social/publish',
 			array(
 				'label'               => __( 'Cross-post a post', '4wp-social' ),
-				'description'         => __( 'Queue a post for YouTube / TikTok / Bluesky. source "package" uses meta.json (all api platforms when none given); "post" uses the media chosen in the editor box.', '4wp-social' ),
+				'description'         => __( 'Queue a post for YouTube / TikTok / Bluesky / DEV.to (DEV.to needs source "package"). source "package" uses meta.json (all api platforms when none given); "post" uses the media chosen in the editor box.', '4wp-social' ),
 				'category'            => self::CATEGORY,
 				'input_schema'        => array(
 					'type'                 => 'object',

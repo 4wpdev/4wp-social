@@ -63,6 +63,13 @@ $forwp_social_copy_example = "## Title\n```\n4WP FAQ: FAQ Schema for the Core Ac
 </div>
 
 <div class="forwp-social-panel">
+	<h3 class="forwp-social-section-title"><?php esc_html_e( 'Text articles (DEV.to)', '4wp-social' ); ?></h3>
+	<p class="forwp-social-muted"><?php esc_html_e( 'Only for posts with a meta.json package. The "4WP Social: articles" box appears in the editor when the post has one.', '4wp-social' ); ?></p>
+	<pre class="forwp-social-code"><?php echo esc_html( '"dev.to": { "mode": "api", "file": "post-devto.md", "cover": "cover.jpg", "privacy": "public" }' ); ?></pre>
+	<p class="forwp-social-muted" style="margin-top:12px"><?php esc_html_e( 'The file holds optional front matter (title, description, tags, canonical_url, main_image, series, published), an optional "# Title" and the Markdown body. {{original.url}} and {{original.title}} are replaced. Without canonical_url the article points to the post.', '4wp-social' ); ?></p>
+</div>
+
+<div class="forwp-social-panel">
 	<h3 class="forwp-social-section-title"><?php esc_html_e( '3. AI agents (4WP MCP Connector)', '4wp-social' ); ?></h3>
 	<p class="forwp-social-muted"><?php esc_html_e( 'On WordPress 6.9+ the plugin registers abilities in the forwp-social category. Allow them in 4WP MCP Connector.', '4wp-social' ); ?></p>
 	<table class="widefat striped">

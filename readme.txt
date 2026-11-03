@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.3.1
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -39,6 +39,7 @@ This plugin sends your video, captions, cover, title and description to the plat
 * **YouTube Data API v3** (Google) — upload, thumbnail, captions. [Terms](https://developers.google.com/youtube/terms/api-services-terms-of-service), [Privacy](https://policies.google.com/privacy).
 * **TikTok Content Posting API** — upload and status. [Terms](https://www.tiktok.com/legal/page/global/tik-tok-developer-terms-of-service/en), [Privacy](https://www.tiktok.com/legal/page/row/privacy-policy/en).
 * **Bluesky (AT Protocol, bsky.social)** — login with an app password, video upload and post. [Terms](https://bsky.social/about/support/tos), [Privacy](https://bsky.social/about/support/privacy-policy).
+* **DEV.to (Forem API)** — the article text, title, tags, cover URL and canonical URL, sent with your API key. [Terms](https://dev.to/terms), [Privacy](https://dev.to/privacy).
 
 OAuth tokens and app secrets are stored encrypted in your database.
 
@@ -53,6 +54,11 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.4.0 =
+* New platform: DEV.to. Connect with an API key; the key is verified before saving and stored encrypted.
+* New editor box for text articles on posts with a meta.json package. The text comes from the platform "file" (front matter, "# Title", Markdown body), the canonical URL points to the original.
+* Privacy "public" publishes; other values, or "published: false" in the file, save a DEV.to draft. "Publish again" updates the same article.
 
 = 0.3.0 =
 * New platform: Bluesky (AT Protocol). Connect with a handle and an app password (no developer app); the password is verified before saving and stored encrypted.

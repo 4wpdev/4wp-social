@@ -1,6 +1,6 @@
 # 4WP Social
 
-Cross-posting for WordPress: **YouTube**, **TikTok** and **Bluesky** via API, plus Share and Feed contours. Part of the [4WP](https://4wp.dev/) family; conventions follow 4WP Drive.
+Cross-posting for WordPress: **YouTube**, **TikTok**, **Bluesky** and **DEV.to** via API, plus Share and Feed contours. Part of the [4WP](https://4wp.dev/) family; conventions follow 4WP Drive.
 
 Architecture: `4wp-publish-hub/plugin/4wp-social/architecture.md`.
 
@@ -16,10 +16,10 @@ Architecture: `4wp-publish-hub/plugin/4wp-social/architecture.md`.
 
 ```
 src/
-├── Contracts/   Module, Platform_Adapter, Media_Source, Share_Service, Feed_Provider
+├── Contracts/   Module, Platform_Adapter, Article_Adapter, Media_Source, Share_Service, Feed_Provider
 ├── Core/        Module_Registry, Settings, Media_Package, Publish_Result
 ├── Auth/        OAuth_Controller, Google/TikTok providers, Crypto, stores
-├── Api/         Http, YouTube_Client, TikTok_Client, Bluesky_Client
+├── Api/         Http, YouTube_Client, TikTok_Client, Bluesky_Client, DevTo_Client
 ├── Modules/
 │   ├── Posting/ Package_Importer, Package_Reader, Post_Reader, Posting_Service,
 │   │            Queue, Drive_Bridge, Post_Metabox, Abilities, Adapters/

@@ -7,8 +7,10 @@
 
 namespace ForWP\Social\Modules\Posting;
 
+use ForWP\Social\Contracts\Article_Adapter_Interface;
 use ForWP\Social\Contracts\Platform_Adapter_Interface;
 use ForWP\Social\Modules\Posting\Adapters\Bluesky_Adapter;
+use ForWP\Social\Modules\Posting\Adapters\DevTo_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\TikTok_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\YouTube_Adapter;
 
@@ -36,6 +38,7 @@ final class Adapter_Registry {
 			YouTube_Adapter::SLUG => new YouTube_Adapter(),
 			TikTok_Adapter::SLUG  => new TikTok_Adapter(),
 			Bluesky_Adapter::SLUG => new Bluesky_Adapter(),
+			DevTo_Adapter::SLUG   => new DevTo_Adapter(),
 		);
 
 		/**
@@ -59,6 +62,15 @@ final class Adapter_Registry {
 	 */
 	public static function get( string $slug ): ?Platform_Adapter_Interface {
 		return self::all()[ $slug ] ?? null;
+	}
+
+	/**
+	 * Whether the platform publishes text articles from a package file instead of video.
+	 *
+	 * @param string $slug Platform key.
+	 */
+	public static function is_article( string $slug ): bool {
+		return self::get( $slug ) instanceof Article_Adapter_Interface;
 	}
 
 	/**

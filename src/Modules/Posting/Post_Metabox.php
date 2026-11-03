@@ -23,6 +23,7 @@ final class Post_Metabox {
 	 */
 	public static function boot(): void {
 		add_action( 'add_meta_boxes', array( self::class, 'register' ) );
+		add_action( 'add_meta_boxes', array( self::class, 'register_articles' ), 10, 2 );
 		add_action( 'save_post', array( self::class, 'save' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 	}
@@ -62,6 +63,54 @@ final class Post_Metabox {
 	}
 
 	/**
+	 * Text articles: any post type, only when the post has a meta.json package.
+	 *
+	 * @param string $post_type Post type.
+	 * @param mixed  $post      Post.
+	 * @return void
+	 */
+	public static function register_articles( $post_type, $post ): void {
+		if ( ! $post instanceof WP_Post || ! current_user_can( 'publish_posts' ) || ! ( new Package_Reader() )->is_package_post( (int) $post->ID ) ) {
+			return;
+		}
+		if ( empty( self::adapters( true ) ) ) {
+			return;
+		}
+
+		add_meta_box( 'forwp-social-articles', __( '4WP Social: articles', '4wp-social' ), array( self::class, 'render_articles' ), (string) $post_type, 'side' );
+	}
+
+	/**
+	 * @param WP_Post $post Post.
+	 * @return void
+	 */
+	public static function render_articles( WP_Post $post ): void {
+		$published = ( new Posting_Service() )->published_map( (int) $post->ID );
+		$jobs      = new Job_Repository();
+		$snapshot  = Package_Importer::snapshot( (int) $post->ID );
+		$adapters  = self::adapters( true );
+
+		include FORWP_SOCIAL_PATH . 'views/post-article-metabox.php';
+	}
+
+	/**
+	 * Adapters of one box: articles or media.
+	 *
+	 * @param bool $articles Article adapters (true) or media adapters (false).
+	 * @return array<string, \ForWP\Social\Contracts\Platform_Adapter_Interface>
+	 */
+	private static function adapters( bool $articles ): array {
+		$out = array();
+		foreach ( Adapter_Registry::all() as $key => $adapter ) {
+			if ( Adapter_Registry::is_article( $key ) === $articles ) {
+				$out[ $key ] = $adapter;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
 	 * @param WP_Post $post Post.
 	 * @return void
 	 */
@@ -73,7 +122,7 @@ final class Post_Metabox {
 		$published  = $service->published_map( (int) $post->ID );
 		$jobs       = new Job_Repository();
 		$is_package = ( new Package_Reader() )->is_package_post( (int) $post->ID );
-		$adapters   = Adapter_Registry::all();
+		$adapters   = self::adapters( false );
 
 		include FORWP_SOCIAL_PATH . 'views/post-metabox.php';
 	}
@@ -105,11 +154,19 @@ final class Post_Metabox {
 			return;
 		}
 		$screen = get_current_screen();
-		if ( ! $screen || ! in_array( $screen->post_type, self::post_types(), true ) ) {
+		if ( ! $screen ) {
 			return;
 		}
 
-		wp_enqueue_media();
+		$media_box = in_array( $screen->post_type, self::post_types(), true );
+		$post      = get_post();
+		if ( ! $media_box && ! ( $post && ( new Package_Reader() )->is_package_post( (int) $post->ID ) ) ) {
+			return;
+		}
+
+		if ( $media_box ) {
+			wp_enqueue_media();
+		}
 		$css = FORWP_SOCIAL_PATH . 'assets/admin.css';
 		$js  = FORWP_SOCIAL_PATH . 'assets/post-metabox.js';
 		wp_enqueue_style( 'forwp-social-admin', FORWP_SOCIAL_URL . 'assets/admin.css', array(), is_readable( $css ) ? (string) filemtime( $css ) : FORWP_SOCIAL_VERSION );
@@ -131,6 +188,7 @@ final class Post_Metabox {
 					'skippedShort' => __( 'skipped', '4wp-social' ),
 					'reasons'      => array(
 						'not_declared'   => __( 'meta.json has no entry for this platform and no package video to reuse.', '4wp-social' ),
+						'no_article'     => __( 'meta.json has no "mode": "api" entry with a text file for this platform.', '4wp-social' ),
 						'no_adapter'     => __( 'this platform is not available.', '4wp-social' ),
 						'already_posted' => __( 'already posted. Tick "Publish again" to post once more.', '4wp-social' ),
 						'in_queue'       => __( 'already in the queue.', '4wp-social' ),

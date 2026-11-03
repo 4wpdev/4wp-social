@@ -123,7 +123,7 @@
 			data: {
 				post_id: parseInt( $box.data( 'post-id' ), 10 ),
 				platforms: platforms,
-				source: $box.find( 'input[name=forwp_social_source]:checked' ).val() || 'post',
+				source: $box.data( 'source' ) || $box.find( 'input[name=forwp_social_source]:checked' ).val() || 'post',
 				options: options,
 				force: $box.find( '.forwp-social-force' ).is( ':checked' ),
 			},

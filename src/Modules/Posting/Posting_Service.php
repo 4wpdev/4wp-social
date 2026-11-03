@@ -86,6 +86,9 @@ final class Posting_Service {
 
 			if ( ! Adapter_Registry::get( $platform ) ) {
 				$reason = 'no_adapter';
+			} elseif ( Adapter_Registry::is_article( $platform ) ) {
+				// Articles come only from a package text file.
+				$reason = 'no_article';
 			} elseif ( ! $force && isset( $done[ $platform ] ) ) {
 				$reason = 'already_posted';
 			} elseif ( $this->has_active_job( $post_id, $platform ) ) {
@@ -140,8 +143,11 @@ final class Posting_Service {
 			$entry  = $package['platforms'][ $platform ] ?? null;
 			$reason = '';
 
-			// Not in meta.json: still goes out with the package video (Package_Reader::borrowed_item()).
-			if ( ! is_array( $entry ) && null === $borrowed ) {
+			// mode "manual" stays with 4WP SEO Helper; articles cannot borrow a video.
+			if ( Adapter_Registry::is_article( $platform ) && ( ! is_array( $entry ) || 'api' !== ( $entry['mode'] ?? '' ) ) ) {
+				$reason = 'no_article';
+				// Not in meta.json: still goes out with the package video (Package_Reader::borrowed_item()).
+			} elseif ( ! is_array( $entry ) && null === $borrowed ) {
 				$reason = 'not_declared';
 			} elseif ( ! Adapter_Registry::get( $platform ) ) {
 				$reason = 'no_adapter';
