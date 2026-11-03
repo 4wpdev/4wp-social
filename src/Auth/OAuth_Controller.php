@@ -318,10 +318,11 @@ final class OAuth_Controller {
 	 * @return array{connected: bool, account: string, connected_at: string, expires_at: int, refresh_expires_at: int, scope: string}
 	 */
 	public function connection_details( string $platform ): array {
-		$tokens = ( new Token_Store( $platform ) )->get();
+		$tokens    = ( new Token_Store( $platform ) )->get();
+		$connected = '' !== (string) ( $tokens['refresh_token'] ?? '' ) && ! self::is_refresh_token_expired( $tokens );
 
 		return array(
-			'connected'          => '' !== (string) ( $tokens['refresh_token'] ?? '' ),
+			'connected'          => $connected,
 			'account'            => (string) ( $tokens['account'] ?? '' ),
 			'connected_at'       => (string) ( $tokens['connected_at'] ?? '' ),
 			'expires_at'         => (int) ( $tokens['expires_at'] ?? 0 ),
@@ -400,18 +401,97 @@ final class OAuth_Controller {
 			return new WP_Error( 'forwp_social_not_connected', __( 'The account for this platform is not connected.', '4wp-social' ) );
 		}
 
-		if ( ! empty( $tokens['access_token'] ) && (int) ( $tokens['expires_at'] ?? 0 ) > time() + 60 ) {
+		if ( self::has_valid_access_token( $tokens ) ) {
 			return (string) $tokens['access_token'];
 		}
 
-		$fresh = $provider->refresh( Credentials_Store::get( $platform ), (string) $tokens['refresh_token'] );
-		if ( is_wp_error( $fresh ) ) {
-			return $fresh;
+		// TikTok invalidates a refresh token on first use, so only one request may refresh at a time.
+		$lock   = self::refresh_lock_name( $platform );
+		$locked = self::acquire_refresh_lock( $lock );
+
+		try {
+			// Another request may have refreshed while this one waited: read past the object cache.
+			wp_cache_delete( $store->option_name(), 'options' );
+			$tokens = $store->get();
+
+			if ( empty( $tokens['refresh_token'] ) ) {
+				return new WP_Error( 'forwp_social_not_connected', __( 'The account for this platform is not connected.', '4wp-social' ) );
+			}
+			if ( self::has_valid_access_token( $tokens ) ) {
+				return (string) $tokens['access_token'];
+			}
+
+			$fresh = $provider->refresh( Credentials_Store::get( $platform ), (string) $tokens['refresh_token'] );
+			if ( is_wp_error( $fresh ) ) {
+				return $fresh;
+			}
+
+			$store->save( self::merge_tokens( $tokens, $fresh ) );
+
+			return (string) $fresh['access_token'];
+		} finally {
+			if ( $locked ) {
+				self::release_refresh_lock( $lock );
+			}
 		}
+	}
 
-		$store->save( self::merge_tokens( $tokens, $fresh ) );
+	/**
+	 * Whether the stored access token stays valid for at least another minute.
+	 *
+	 * @param array<string, mixed> $tokens Stored tokens.
+	 */
+	private static function has_valid_access_token( array $tokens ): bool {
+		return ! empty( $tokens['access_token'] ) && (int) ( $tokens['expires_at'] ?? 0 ) > time() + 60;
+	}
 
-		return (string) $fresh['access_token'];
+	/**
+	 * Whether a stored refresh token has passed its expiry (0 = the platform sets none, as Google).
+	 *
+	 * @param array<string, mixed> $tokens Stored tokens.
+	 */
+	private static function is_refresh_token_expired( array $tokens ): bool {
+		$expires_at = (int) ( $tokens['refresh_expires_at'] ?? 0 );
+
+		return $expires_at > 0 && $expires_at <= time();
+	}
+
+	/**
+	 * Database lock name for a platform on this site (MySQL allows at most 64 characters).
+	 *
+	 * @param string $platform Platform key.
+	 */
+	private static function refresh_lock_name( string $platform ): string {
+		global $wpdb;
+
+		return 'forwp_social_' . md5( $wpdb->prefix . $platform );
+	}
+
+	/**
+	 * Wait for the refresh lock, longer than the 30-second token request it guards.
+	 *
+	 * The database drops the lock if the request dies. Without the lock the refresh still runs:
+	 * at worst the duplicate is rejected by the platform and the stored tokens stay intact.
+	 *
+	 * @param string $lock Lock name.
+	 */
+	private static function acquire_refresh_lock( string $lock ): bool {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Advisory lock, nothing to cache.
+		return '1' === (string) $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, %d)', $lock, 35 ) );
+	}
+
+	/**
+	 * Release the refresh lock.
+	 *
+	 * @param string $lock Lock name.
+	 */
+	private static function release_refresh_lock( string $lock ): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Advisory lock, nothing to cache.
+		$wpdb->get_var( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock ) );
 	}
 
 	/**
