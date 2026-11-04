@@ -24,14 +24,33 @@ final class Adapter_Registry {
 	/**
 	 * @var array<string, Platform_Adapter_Interface>|null
 	 */
-	private static ?array $adapters = null;
+	private static ?array $connectors = null;
 
 	/**
+	 * Adapters by platform key: only what a platform is bound to.
+	 *
 	 * @return array<string, Platform_Adapter_Interface>
 	 */
 	public static function all(): array {
-		if ( null !== self::$adapters ) {
-			return self::$adapters;
+		$bound = array();
+		foreach ( Platform_Registry::all( false ) as $key => $platform ) {
+			$connector = self::connectors()[ (string) ( $platform['connector'] ?? '' ) ] ?? null;
+			if ( $connector ) {
+				$bound[ (string) $key ] = $connector;
+			}
+		}
+
+		return $bound;
+	}
+
+	/**
+	 * Connectors of the plugin, bound or not, by their own slug.
+	 *
+	 * @return array<string, Platform_Adapter_Interface>
+	 */
+	public static function connectors(): array {
+		if ( null !== self::$connectors ) {
+			return self::$connectors;
 		}
 
 		$map = array(
@@ -46,15 +65,15 @@ final class Adapter_Registry {
 		 *
 		 * @param array<string, Platform_Adapter_Interface> $map Adapters keyed by meta.json platform key.
 		 */
-		$filtered       = apply_filters( 'forwp_social_adapters', $map );
-		self::$adapters = array();
+		$filtered         = apply_filters( 'forwp_social_adapters', $map );
+		self::$connectors = array();
 		foreach ( is_array( $filtered ) ? $filtered : $map as $slug => $adapter ) {
 			if ( $adapter instanceof Platform_Adapter_Interface ) {
-				self::$adapters[ (string) $slug ] = $adapter;
+				self::$connectors[ (string) $slug ] = $adapter;
 			}
 		}
 
-		return self::$adapters;
+		return self::$connectors;
 	}
 
 	/**
@@ -77,6 +96,6 @@ final class Adapter_Registry {
 	 * Reset cache (tests).
 	 */
 	public static function reset(): void {
-		self::$adapters = null;
+		self::$connectors = null;
 	}
 }

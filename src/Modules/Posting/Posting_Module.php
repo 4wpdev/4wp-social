@@ -7,12 +7,15 @@
 
 namespace ForWP\Social\Modules\Posting;
 
+use ForWP\Social\Cli\Commands;
 use ForWP\Social\Contracts\Module_Interface;
+use ForWP\Social\Rest\Rest_Crosspost;
+use ForWP\Social\Rest\Rest_Platforms;
 
 defined( 'ABSPATH' ) || exit;
 
 /**
- * YouTube, TikTok and Bluesky video and DEV.to article cross-posting through the platform APIs.
+ * YouTube, TikTok and Bluesky video and DEV.to article cross-posting through the platform APIs, plus manual platforms.
  */
 final class Posting_Module implements Module_Interface {
 
@@ -40,6 +43,13 @@ final class Posting_Module implements Module_Interface {
 		Post_Metabox::boot();
 		Remote_Link::boot();
 		Abilities::boot();
+		Manual_Flow::boot();
+		Status_Column::boot();
+		Rest_Crosspost::register();
+		Rest_Platforms::register();
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			\WP_CLI::add_command( 'forwp-social', Commands::class );
+		}
 		add_filter( 'upload_mimes', array( self::class, 'caption_mimes' ) );
 		add_filter( 'wp_check_filetype_and_ext', array( self::class, 'caption_filetype' ), 10, 3 );
 	}

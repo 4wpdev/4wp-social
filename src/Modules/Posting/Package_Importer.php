@@ -177,6 +177,8 @@ final class Package_Importer {
 		 */
 		do_action( 'forwp_social_package_imported', $post_id, $snapshot, $errors );
 
+		Status_Index::sync_package( $post_id );
+
 		return array(
 			'platforms' => array_keys( $snapshot ),
 			'errors'    => $errors,

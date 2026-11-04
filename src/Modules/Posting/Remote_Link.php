@@ -50,7 +50,7 @@ final class Remote_Link {
 	 * @param string $platform Platform key.
 	 * @param string $id       Remote id.
 	 * @param string $url      Remote URL (built for YouTube when empty).
-	 * @param string $via      meta.json|search|manual.
+	 * @param string $via      meta.json|search|manual|extension.
 	 * @return array{id: string, url: string, at: string, via: string}
 	 */
 	public static function link( int $post_id, string $platform, string $id, string $url = '', string $via = 'manual' ): array {
@@ -70,6 +70,19 @@ final class Remote_Link {
 		$map[ $platform ] = $row;
 		update_post_meta( $post_id, Posting_Service::PUBLISHED_META, $map );
 
+		$known = Status_Index::get( $post_id )[ $platform ] ?? array();
+		Status_Index::put(
+			$post_id,
+			$platform,
+			array(
+				'mode'      => (string) ( $known['mode'] ?? ( Platform_Registry::get( $platform )['mode'] ?? Status_Index::MODE_MANUAL ) ),
+				'status'    => Job_Repository::PUBLISHED,
+				'url'       => $url,
+				'remote_id' => $id,
+				'via'       => 'search' === $via ? 'manual' : $via,
+			)
+		);
+
 		/** This action is documented in src/Modules/Posting/Posting_Service.php */
 		do_action( 'forwp_social_published', $post_id, $platform, Publish_Result::published( $id, $url ) );
 
@@ -87,6 +100,8 @@ final class Remote_Link {
 		$map = ( new Posting_Service() )->published_map( $post_id );
 		unset( $map[ $platform ] );
 		update_post_meta( $post_id, Posting_Service::PUBLISHED_META, $map );
+		Status_Index::forget( $post_id, $platform );
+		Status_Index::sync_package( $post_id );
 
 		$urls = get_post_meta( $post_id, 'platform_urls', true );
 		if ( is_array( $urls ) && isset( $urls[ $platform ] ) ) {

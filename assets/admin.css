@@ -55,17 +55,6 @@
 .forwp-social-toggle-row input[type="checkbox"] { margin-top: 3px; }
 
 /* Accounts: platform panel */
-.forwp-social-platform { border: 1px solid #e0e0e0; border-radius: 8px; margin: 0 0 20px; overflow: hidden; }
-.forwp-social-platform__head { align-items: center; background: #f6f7f7; border-bottom: 1px solid #e0e0e0; display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; padding: 14px 18px; }
-.forwp-social-platform__title { align-items: center; display: flex; font-size: 1.1rem; font-weight: 600; gap: 10px; margin: 0; }
-.forwp-social-platform__title .dashicons { color: #50575e; }
-.forwp-social-progress { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; }
-.forwp-social-progress li { align-items: center; color: #646970; display: flex; font-size: 12px; gap: 6px; margin: 0; }
-.forwp-social-progress li + li::before { background: #dcdcde; content: ""; display: inline-block; height: 1px; margin-right: 6px; width: 18px; }
-.forwp-social-progress__dot { align-items: center; background: #f0f0f1; border-radius: 50%; color: #50575e; display: inline-flex; font-size: 11px; font-weight: 600; height: 20px; justify-content: center; width: 20px; }
-.forwp-social-progress li.is-done .forwp-social-progress__dot { background: #00a32a; color: #fff; }
-.forwp-social-progress li.is-current .forwp-social-progress__dot { background: var(--wp-admin-theme-color, #3858e9); color: #fff; }
-.forwp-social-progress li.is-done, .forwp-social-progress li.is-current { color: #1d2327; }
 
 .forwp-social-step { border-bottom: 1px solid #f0f0f1; display: grid; gap: 14px; grid-template-columns: 34px 1fr; padding: 18px; }
 .forwp-social-step[id] { scroll-margin-top: 48px; }
@@ -139,3 +128,142 @@
 .forwp-social-source label { display: inline-flex; align-items: center; gap: 6px; }
 .forwp-social-publish.is-done:disabled { background: #edfaef !important; border-color: #00a32a !important; color: #1e4620 !important; }
 .forwp-social-publish.is-failed { background: #d63638; border-color: #d63638; }
+
+/* Cross-posting statuses: column, calendar, manual box. */
+.column-forwp_social { width: 12em; }
+.forwp-social-chip { align-items: center; display: inline-flex; gap: 2px; margin: 0 6px 2px 0; text-decoration: none; white-space: nowrap; }
+.forwp-social-chip .dashicons { font-size: 16px; height: 16px; width: 16px; }
+.forwp-social-chip__abbr { background: #f0f0f1; border-radius: 3px; color: #50575e; font-size: 10px; font-weight: 600; line-height: 16px; padding: 0 3px; }
+.forwp-social-view-switch { display: flex; gap: 6px; }
+.forwp-social-month-nav { align-items: center; display: flex; gap: 10px; margin: 0 0 10px; }
+.forwp-social-month { background: #dcdcde; border: 1px solid #dcdcde; display: grid; gap: 1px; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+.forwp-social-month__head { background: #f6f7f7; font-weight: 600; padding: 6px 8px; }
+.forwp-social-month__cell { background: #fff; min-height: 84px; padding: 6px 8px; }
+.forwp-social-month__cell.is-empty { background: #f6f7f7; }
+.forwp-social-month__day { color: #646970; display: block; font-size: 12px; margin-bottom: 4px; }
+.forwp-social-manual-msg { font-size: 12px; }
+
+/* Platforms page. */
+.forwp-social-platform-actions { margin: 12px 0; }
+.forwp-social-platform-msg { color: #8a2424; font-weight: 600; margin-bottom: 8px; }
+.forwp-social-platform-msg:empty { display: none; }
+.forwp-social-platform-list { margin: 0; max-width: 960px; }
+.forwp-social-platform { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; margin: 0 0 6px; }
+.forwp-social-platform.is-off .forwp-social-platform__name { opacity: 0.55; }
+.forwp-social-platform__row { align-items: center; display: flex; flex-wrap: wrap; gap: 8px 14px; padding: 10px 12px; }
+.forwp-social-platform__drag { color: #787c82; cursor: grab; }
+.forwp-social-platform__name { flex: 1 1 220px; min-width: 0; }
+.forwp-social-platform__name code { font-size: 12px; margin-left: 4px; }
+.forwp-social-platform__toggle { align-items: center; display: inline-flex; gap: 2px; }
+.forwp-social-platform-form { background: #f6f7f7; border-radius: 4px; margin-bottom: 8px; max-width: 960px; padding: 12px; }
+.forwp-social-platform .forwp-social-platform-form { border-radius: 0 0 4px 4px; border-top: 1px solid #dcdcde; margin: 0; }
+.forwp-social-platform-grid { display: grid; gap: 10px 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.forwp-social-platform-field span { display: block; font-weight: 600; margin-bottom: 3px; }
+.forwp-social-platform-field input, .forwp-social-platform-field select { max-width: 100%; width: 100%; }
+.forwp-social-platform-buttons { margin: 12px 0 0; }
+
+/* Accounts: one row per account, opened one at a time. */
+.forwp-social-account-list { max-width: 960px; }
+.forwp-social-account-item > summary { cursor: pointer; list-style: none; }
+.forwp-social-account-item > summary::-webkit-details-marker { display: none; }
+.forwp-social-account-item__chevron { color: #787c82; transition: transform 0.15s; }
+.forwp-social-account-item[open] .forwp-social-account-item__chevron { transform: rotate(180deg); }
+.forwp-social-account-item__body { border-top: 1px solid #dcdcde; }
+.forwp-social-account-item .forwp-social-platform__name .forwp-social-muted { margin-left: 6px; }
+.forwp-social-setup { border-bottom: 1px solid #f0f0f1; }
+.forwp-social-setup > summary { color: var(--wp-admin-theme-color, #3858e9); cursor: pointer; font-weight: 600; padding: 12px 18px; }
+details.forwp-social-devmode { border: 1px solid #dcdcde; border-radius: 4px; margin: 0 0 12px; padding: 10px 12px; }
+details.forwp-social-devmode > summary { margin-bottom: 8px; }
+
+/* Calendar page. */
+.forwp-social-stats { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); margin: 16px 0; }
+.forwp-social-stat { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 12px 14px; }
+.forwp-social-stat__value { color: #1d2327; display: block; font-size: 24px; font-weight: 600; line-height: 1.2; }
+.forwp-social-stat__label { color: #646970; display: block; font-size: 12px; margin-top: 2px; }
+.forwp-social-month__cell.is-today .forwp-social-month__day { color: var(--wp-admin-theme-color, #3858e9); font-weight: 700; }
+.forwp-social-month .forwp-social-chip { display: flex; margin: 0 0 4px; min-width: 0; }
+.forwp-social-chip__title { flex: 1 1 auto; font-size: 12px; margin-left: 2px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.forwp-social-month.has-titles .forwp-social-chip .dashicons, .forwp-social-month.has-titles .forwp-social-chip__abbr { flex: 0 0 auto; }
+.forwp-social-admin-shell.forwp-social-calendar-page { max-width: none; }
+.forwp-social-calendar-page .forwp-social-month__cell { min-height: 110px; }
+.forwp-social-icon { display: block; flex: 0 0 auto; height: 16px; object-fit: contain; width: 16px; }
+.forwp-social-chip .forwp-social-icon { margin-right: 2px; }
+.forwp-social-platform__icon { flex: 0 0 auto; }
+.forwp-social-platform-icon-row { align-items: center; display: flex; gap: 8px; min-height: 30px; }
+
+/* Status markers: shape + color. */
+.forwp-social-marker { flex: 0 0 auto; font-size: 14px; height: 14px; line-height: 14px; width: 14px; }
+.forwp-social-marker--done { color: #00a32a; }
+.forwp-social-marker--planned { color: #2271b1; }
+.forwp-social-marker--waiting { color: #996800; }
+.forwp-social-marker--failed { color: #d63638; }
+.forwp-social-marker--site { color: #787c82; }
+
+/* Calendar grid. */
+.forwp-social-month { background: #e5e5e5; border-color: #e5e5e5; border-radius: 4px; overflow: hidden; }
+.forwp-social-month__cell { padding: 8px; }
+.forwp-social-month__cell.is-empty { background: #fafafa; cursor: default; }
+.forwp-social-month .forwp-social-chip { align-items: center; border-radius: 3px; color: #1d2327; gap: 6px; margin: 0; padding: 2px 4px; text-decoration: none; }
+.forwp-social-month .forwp-social-chip:hover, .forwp-social-month .forwp-social-chip:focus { background: #f0f0f1; color: #1d2327; }
+.forwp-social-month .forwp-social-chip .dashicons:not(.forwp-social-marker) { color: #50575e; }
+.forwp-social-month .forwp-social-chip--site + .forwp-social-chip:not(.forwp-social-chip--site) { border-top: 1px solid #f0f0f1; border-radius: 0 0 3px 3px; margin-top: 4px; padding-top: 6px; }
+.forwp-social-month .forwp-social-marker { order: 3; }
+.forwp-social-chip__abbr { border-radius: 3px; display: inline-block; flex: 0 0 auto; font-size: 8px; height: 16px; letter-spacing: 0; line-height: 16px; padding: 0; text-align: center; width: 16px; }
+.forwp-social-chip__title { margin-left: 0; }
+.forwp-social-stat__label .forwp-social-marker { margin-right: 2px; vertical-align: -2px; }
+.forwp-social-month__top { align-items: center; display: flex; justify-content: space-between; margin-bottom: 4px; min-height: 24px; }
+.forwp-social-month__top .forwp-social-month__day { color: #50575e; font-size: 12px; font-weight: 600; line-height: 22px; margin: 0; min-width: 22px; }
+.forwp-social-month__cell.is-today .forwp-social-month__day { background: var(--wp-admin-theme-color, #3858e9); border-radius: 11px; color: #fff; text-align: center; }
+.forwp-social-month__zoom { align-items: center; background: none; border: 0; border-radius: 4px; color: #787c82; cursor: pointer; display: inline-flex; height: 24px; justify-content: center; padding: 0; width: 24px; }
+.forwp-social-month__zoom .dashicons { font-size: 16px; height: 16px; width: 16px; }
+.forwp-social-month__zoom:hover, .forwp-social-month__zoom:focus-visible { background: #f0f0f1; color: var(--wp-admin-theme-color, #3858e9); }
+
+/* Calendar: day popup. */
+.forwp-social-day { border: 0; border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25); max-height: 80vh; max-width: 720px; outline: 0; padding: 0; width: calc(100% - 32px); }
+.forwp-social-day::backdrop { background: rgba(0, 0, 0, 0.4); }
+.forwp-social-day__head { align-items: center; background: #fff; border-bottom: 1px solid #e5e5e5; display: flex; gap: 2px; padding: 12px 12px 12px 20px; position: sticky; top: 0; z-index: 1; }
+.forwp-social-day__title { flex: 1 1 auto; font-size: 15px; font-weight: 600; margin: 0; }
+.forwp-social-day__btn { align-items: center; background: none; border: 0; border-radius: 4px; color: #50575e; cursor: pointer; display: inline-flex; height: 30px; justify-content: center; padding: 0; width: 30px; }
+.forwp-social-day__btn:hover, .forwp-social-day__btn:focus-visible { background: #f0f0f1; color: #1d2327; }
+.forwp-social-day__stats { color: #646970; display: flex; flex-wrap: wrap; font-size: 12px; gap: 4px 16px; padding: 12px 20px 0; }
+.forwp-social-day__stats[hidden] { display: none; }
+.forwp-social-day__stat { align-items: center; display: inline-flex; gap: 4px; }
+.forwp-social-day__stat strong { color: #1d2327; }
+.forwp-social-day__body { padding: 4px 20px 20px; }
+.forwp-social-day__empty { color: #646970; margin: 14px 0 4px; }
+.forwp-social-day__section { color: #646970; font-size: 11px; font-weight: 600; letter-spacing: 0.04em; margin: 18px 0 2px; text-transform: uppercase; }
+.forwp-social-day__platform { align-items: center; color: #1d2327; display: flex; font-size: 13px; font-weight: 600; gap: 6px; margin: 10px 0 2px; }
+.forwp-social-day__platform .dashicons { color: #50575e; font-size: 16px; height: 16px; width: 16px; }
+.forwp-social-day__list { margin: 0; }
+.forwp-social-day__item { align-items: center; border-top: 1px solid #f0f0f1; display: grid; gap: 2px 12px; grid-template-columns: 42px minmax(0, 1fr) 150px 20px; margin: 0; padding: 7px 0; }
+.forwp-social-day__time { color: #646970; font-size: 12px; font-variant-numeric: tabular-nums; }
+.forwp-social-day__post { color: #1d2327; text-decoration: none; }
+.forwp-social-day__post:hover, .forwp-social-day__post:focus { color: var(--wp-admin-theme-color, #3858e9); text-decoration: underline; }
+.forwp-social-day__status { align-items: center; color: #646970; display: inline-flex; font-size: 12px; gap: 4px; }
+.forwp-social-day__open a { color: #787c82; font-size: 16px; height: 16px; text-decoration: none; width: 16px; }
+.forwp-social-day__open a:hover, .forwp-social-day__open a:focus { color: var(--wp-admin-theme-color, #3858e9); }
+@media (max-width: 600px) {
+	.forwp-social-day__item { grid-template-columns: 42px minmax(0, 1fr) 20px; }
+	.forwp-social-day__status { grid-column: 2; grid-row: 2; }
+}
+
+/* Calendar: platforms with a counter, information only. */
+.forwp-social-platform-counts-row { align-items: center; display: flex; flex-wrap: wrap; font-size: 12px; gap: 6px 14px; margin: 12px 0 0; }
+.forwp-social-platform-counts { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0; }
+.forwp-social-platform-count { align-items: center; display: inline-flex; gap: 5px; margin: 0; }
+.forwp-social-platform-count__value { color: #1d2327; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.forwp-social-platform-count.is-zero { opacity: 0.45; }
+
+/* Post editor boxes: one row layout. */
+.forwp-social-platform-name { align-items: center; display: inline-flex; flex: 1 1 auto; gap: 6px; min-width: 0; }
+.forwp-social-platforms li > label .forwp-social-icon, .forwp-social-platform-name .forwp-social-icon { flex: 0 0 auto; }
+.forwp-social-platforms .forwp-social-chip__abbr { border-radius: 3px; display: inline-block; flex: 0 0 auto; font-size: 8px; height: 16px; line-height: 16px; padding: 0; text-align: center; width: 16px; }
+.forwp-social-mark-form { flex: 1 0 100%; font-size: 12px; margin: 0 0 4px; }
+.forwp-social-mark-form summary { color: #2271b1; cursor: pointer; }
+.forwp-social-mark-form .forwp-social-mark-url { margin: 4px 0; }
+.forwp-social-manual-box .forwp-social-notify { margin-bottom: 0; }
+
+/* Post editor boxes: no move arrows, the title gets the room. */
+#forwp-social .handle-order-higher, #forwp-social .handle-order-lower,
+#forwp-social-articles .handle-order-higher, #forwp-social-articles .handle-order-lower,
+#forwp-social-manual .handle-order-higher, #forwp-social-manual .handle-order-lower { display: none; }

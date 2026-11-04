@@ -143,7 +143,7 @@ final class Posting_Service {
 			$entry  = $package['platforms'][ $platform ] ?? null;
 			$reason = '';
 
-			// mode "manual" stays with 4WP SEO Helper; articles cannot borrow a video.
+			// mode "manual" goes through Manual_Flow; articles cannot borrow a video.
 			if ( Adapter_Registry::is_article( $platform ) && ( ! is_array( $entry ) || 'api' !== ( $entry['mode'] ?? '' ) ) ) {
 				$reason = 'no_article';
 				// Not in meta.json: still goes out with the package video (Package_Reader::borrowed_item()).

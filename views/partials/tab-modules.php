@@ -51,7 +51,7 @@ $forwp_social_actions = Admin_Menu::actions();
 
 	<div class="forwp-social-panel">
 		<h3 class="forwp-social-section-title"><?php esc_html_e( 'Posting', '4wp-social' ); ?></h3>
-		<p class="forwp-social-muted"><?php esc_html_e( 'Defaults for every publication. A meta.json package or the editor box can override privacy per post.', '4wp-social' ); ?></p>
+		<p class="forwp-social-muted"><?php esc_html_e( 'Defaults for every publication. A meta.json package can override privacy per post.', '4wp-social' ); ?></p>
 
 		<label class="forwp-social-toggle-row">
 			<input type="checkbox" name="forwp_social_settings[auto_publish]" value="1" <?php checked( ! empty( $settings['auto_publish'] ) ); ?> />
@@ -66,6 +66,20 @@ $forwp_social_actions = Admin_Menu::actions();
 			<input type="number" min="0" max="10080" id="forwp-social-delay" name="forwp_social_settings[delay_minutes]" value="<?php echo esc_attr( (string) $settings['delay_minutes'] ); ?>" />
 			<p class="forwp-social-field__help"><?php esc_html_e( 'meta.json "republish": { "delay_hours", "delay_minutes" } overrides this per package. The editor button always publishes at once.', '4wp-social' ); ?></p>
 		</div>
+
+		<div class="forwp-social-field">
+			<label class="forwp-social-field__label" for="forwp-social-manual-delay"><?php esc_html_e( 'Manual platforms: delay after the post goes live (minutes)', '4wp-social' ); ?></label>
+			<input type="number" min="0" max="10080" id="forwp-social-manual-delay" name="forwp_social_settings[manual_delay_minutes]" value="<?php echo esc_attr( (string) $settings['manual_delay_minutes'] ); ?>" />
+			<p class="forwp-social-field__help"><?php esc_html_e( 'After this time the platform shows as waiting for manual posting. meta.json "republish" overrides it per package.', '4wp-social' ); ?></p>
+		</div>
+
+		<label class="forwp-social-toggle-row">
+			<input type="checkbox" name="forwp_social_settings[manual_notify]" value="1" <?php checked( ! empty( $settings['manual_notify'] ) ); ?> />
+			<span>
+				<strong><?php esc_html_e( 'Send the Telegram reminder for manual platforms', '4wp-social' ); ?></strong><br />
+				<span class="forwp-social-muted"><?php esc_html_e( 'Uses the Telegram channel of 4WP Booking. Keep it off while 4WP SEO Helper still sends its own reminder.', '4wp-social' ); ?></span>
+			</span>
+		</label>
 
 		<div class="forwp-social-field">
 			<label class="forwp-social-field__label" for="forwp-social-privacy-default"><?php esc_html_e( 'Default privacy', '4wp-social' ); ?></label>

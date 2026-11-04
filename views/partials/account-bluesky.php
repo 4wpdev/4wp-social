@@ -27,27 +27,25 @@ $forwp_social_bsky_state = static function ( int $step ) use ( $forwp_social_bsk
 	return $step === $forwp_social_bsky_cur ? 'is-current' : '';
 };
 ?>
-<section class="forwp-social-platform" id="forwp-social-bsky-app">
-	<header class="forwp-social-platform__head">
-		<h3 class="forwp-social-platform__title">
-			<span class="dashicons dashicons-cloud" aria-hidden="true"></span>
-			Bluesky
+<details class="forwp-social-platform forwp-social-account-item" name="forwp-social-accounts" id="forwp-social-bsky-app" <?php echo Bluesky_Account::SLUG === $notice_platform ? 'open' : ''; ?>>
+	<summary class="forwp-social-platform__row">
+		<span class="dashicons dashicons-cloud" aria-hidden="true"></span>
+		<span class="forwp-social-platform__name">
+			<strong>Bluesky</strong>
 			<?php if ( $forwp_social_bsky_on ) : ?>
-				<span class="forwp-social-badge forwp-social-badge--on"><?php esc_html_e( 'Connected', '4wp-social' ); ?></span>
-			<?php else : ?>
-				<span class="forwp-social-badge"><?php esc_html_e( 'Not set up', '4wp-social' ); ?></span>
+				<span class="forwp-social-muted"><?php echo esc_html( '@' . $forwp_social_bsky['handle'] ); ?></span>
 			<?php endif; ?>
-		</h3>
-		<ol class="forwp-social-progress" aria-label="<?php esc_attr_e( 'Setup progress', '4wp-social' ); ?>">
-			<?php foreach ( array( 1 => __( 'App password', '4wp-social' ), 2 => __( 'Connect', '4wp-social' ) ) as $forwp_social_n => $forwp_social_step_label ) : ?>
-				<li class="<?php echo esc_attr( $forwp_social_bsky_state( $forwp_social_n ) ); ?>">
-					<span class="forwp-social-progress__dot"><?php echo $forwp_social_n < $forwp_social_bsky_cur ? '&#10003;' : esc_html( (string) $forwp_social_n ); ?></span>
-					<?php echo esc_html( $forwp_social_step_label ); ?>
-				</li>
-			<?php endforeach; ?>
-		</ol>
-	</header>
+		</span>
+		<?php if ( $forwp_social_bsky_on ) : ?>
+			<span class="forwp-social-badge forwp-social-badge--on"><?php esc_html_e( 'Connected', '4wp-social' ); ?></span>
+		<?php else : ?>
+			<span class="forwp-social-badge"><?php esc_html_e( 'Not set up', '4wp-social' ); ?></span>
+		<?php endif; ?>
+		<span class="forwp-social-account-item__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+	</summary>
+	<div class="forwp-social-account-item__body">
 
+	<?php if ( ! $forwp_social_bsky_on ) : ?>
 	<?php /* Step 1 — create an app password. */ ?>
 	<div class="forwp-social-step <?php echo esc_attr( $forwp_social_bsky_state( 1 ) ); ?>">
 		<div class="forwp-social-step__num"><?php echo 1 < $forwp_social_bsky_cur ? '&#10003;' : '1'; ?></div>
@@ -59,6 +57,8 @@ $forwp_social_bsky_state = static function ( int $step ) use ( $forwp_social_bsk
 			</a>
 		</div>
 	</div>
+
+	<?php endif; ?>
 
 	<?php /* Step 2 — connect. */ ?>
 	<div class="forwp-social-step <?php echo esc_attr( $forwp_social_bsky_state( 2 ) ); ?>" id="<?php echo esc_attr( OAuth_Controller::connect_anchor( Bluesky_Account::SLUG ) ); ?>">
@@ -111,4 +111,5 @@ $forwp_social_bsky_state = static function ( int $step ) use ( $forwp_social_bsk
 			<?php endif; ?>
 		</div>
 	</div>
-</section>
+	</div>
+</details>

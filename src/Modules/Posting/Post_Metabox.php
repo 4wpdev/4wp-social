@@ -24,6 +24,7 @@ final class Post_Metabox {
 	public static function boot(): void {
 		add_action( 'add_meta_boxes', array( self::class, 'register' ) );
 		add_action( 'add_meta_boxes', array( self::class, 'register_articles' ), 10, 2 );
+		add_action( 'add_meta_boxes', array( self::class, 'register_manual' ), 10, 2 );
 		add_action( 'save_post', array( self::class, 'save' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue' ) );
 	}
@@ -59,7 +60,7 @@ final class Post_Metabox {
 			return;
 		}
 
-		add_meta_box( 'forwp-social', __( '4WP Social', '4wp-social' ), array( self::class, 'render' ), $types, 'side' );
+		add_meta_box( 'forwp-social', __( '4WP Social Media', '4wp-social' ), array( self::class, 'render' ), $types, 'side' );
 	}
 
 	/**
@@ -77,7 +78,7 @@ final class Post_Metabox {
 			return;
 		}
 
-		add_meta_box( 'forwp-social-articles', __( '4WP Social: articles', '4wp-social' ), array( self::class, 'render_articles' ), (string) $post_type, 'side' );
+		add_meta_box( 'forwp-social-articles', __( '4WP Social Articles', '4wp-social' ), array( self::class, 'render_articles' ), (string) $post_type, 'side' );
 	}
 
 	/**
@@ -94,15 +95,55 @@ final class Post_Metabox {
 	}
 
 	/**
+	 * Manual platforms of the post, from the local index.
+	 *
+	 * @param int $post_id Post id.
+	 * @return array<string, array<string, string>>
+	 */
+	private static function manual_entries( int $post_id ): array {
+		return array_filter(
+			Status_Index::get( $post_id ),
+			static fn( array $entry ): bool => Status_Index::MODE_MANUAL === ( $entry['mode'] ?? '' )
+		);
+	}
+
+	/**
+	 * Manual platforms: any post type, only when the post has some.
+	 *
+	 * @param string $post_type Post type.
+	 * @param mixed  $post      Post.
+	 * @return void
+	 */
+	public static function register_manual( $post_type, $post ): void {
+		if ( ! $post instanceof WP_Post || ! current_user_can( 'edit_post', $post->ID ) || ! self::manual_entries( (int) $post->ID ) ) {
+			return;
+		}
+
+		add_meta_box( 'forwp-social-manual', __( '4WP Social Manual', '4wp-social' ), array( self::class, 'render_manual' ), (string) $post_type, 'side' );
+	}
+
+	/**
+	 * @param WP_Post $post Post.
+	 * @return void
+	 */
+	public static function render_manual( WP_Post $post ): void {
+		$entries  = self::manual_entries( (int) $post->ID );
+		$registry = Platform_Registry::all( false );
+
+		include FORWP_SOCIAL_PATH . 'views/post-manual-metabox.php';
+	}
+
+	/**
 	 * Adapters of one box: articles or media.
 	 *
 	 * @param bool $articles Article adapters (true) or media adapters (false).
 	 * @return array<string, \ForWP\Social\Contracts\Platform_Adapter_Interface>
 	 */
 	private static function adapters( bool $articles ): array {
-		$out = array();
+		$out     = array();
+		$enabled = Platform_Registry::all();
 		foreach ( Adapter_Registry::all() as $key => $adapter ) {
-			if ( Adapter_Registry::is_article( $key ) === $articles ) {
+			if ( isset( $enabled[ $key ] ) && Adapter_Registry::is_article( $key ) === $articles ) {
 				$out[ $key ] = $adapter;
 			}
 		}
@@ -160,7 +201,7 @@ final class Post_Metabox {
 
 		$media_box = in_array( $screen->post_type, self::post_types(), true );
 		$post      = get_post();
-		if ( ! $media_box && ! ( $post && ( new Package_Reader() )->is_package_post( (int) $post->ID ) ) ) {
+		if ( ! $media_box && ! ( $post && ( ( new Package_Reader() )->is_package_post( (int) $post->ID ) || self::manual_entries( (int) $post->ID ) ) ) ) {
 			return;
 		}
 
@@ -198,6 +239,8 @@ final class Post_Metabox {
 					'linked'       => __( 'Linked:', '4wp-social' ),
 					'unlinked'     => __( 'Unlinked. Reload the page to link again.', '4wp-social' ),
 					'notFound'     => __( 'Nothing found by title. Paste the video ID or link below.', '4wp-social' ),
+					'markedDone'   => __( 'posted', '4wp-social' ),
+					'notifySent'   => __( 'Reminder sent.', '4wp-social' ),
 				),
 			)
 		);

@@ -11,7 +11,9 @@ use ForWP\Social\Auth\Credentials_Store;
 use ForWP\Social\Auth\OAuth_Controller;
 use ForWP\Social\Core\Module_Registry;
 use ForWP\Social\Core\Settings;
+use ForWP\Social\Modules\Posting\Calendar;
 use ForWP\Social\Modules\Posting\Job_Repository;
+use ForWP\Social\Rest\Rest_Platforms;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -21,6 +23,10 @@ defined( 'ABSPATH' ) || exit;
 final class Admin_Menu {
 
 	public const MENU_SLUG = 'forwp-social';
+
+	public const PLATFORMS_SLUG = 'forwp-social-platforms';
+
+	public const CALENDAR_SLUG = 'forwp-social-calendar';
 
 	private const SAVE_SETTINGS    = 'forwp_social_save_settings';
 	private const SAVE_CREDENTIALS = 'forwp_social_save_credentials';
@@ -67,6 +73,9 @@ final class Admin_Menu {
 			'dashicons-share',
 			59
 		);
+		add_submenu_page( self::MENU_SLUG, __( 'Settings', '4wp-social' ), __( 'Settings', '4wp-social' ), 'manage_options', self::MENU_SLUG, array( $this, 'render' ) );
+		add_submenu_page( self::MENU_SLUG, __( 'Platforms', '4wp-social' ), __( 'Platforms', '4wp-social' ), 'manage_options', self::PLATFORMS_SLUG, array( $this, 'render_platforms' ) );
+		add_submenu_page( self::MENU_SLUG, __( 'Calendar', '4wp-social' ), __( 'Calendar', '4wp-social' ), 'manage_options', self::CALENDAR_SLUG, array( $this, 'render_calendar' ) );
 	}
 
 	/**
@@ -82,6 +91,102 @@ final class Admin_Menu {
 		$js  = FORWP_SOCIAL_PATH . 'assets/admin.js';
 		wp_enqueue_style( 'forwp-social-admin', FORWP_SOCIAL_URL . 'assets/admin.css', array(), is_readable( $css ) ? (string) filemtime( $css ) : FORWP_SOCIAL_VERSION );
 		wp_enqueue_script( 'forwp-social-admin', FORWP_SOCIAL_URL . 'assets/admin.js', array(), is_readable( $js ) ? (string) filemtime( $js ) : FORWP_SOCIAL_VERSION, true );
+
+		if ( false !== strpos( $hook_suffix, self::PLATFORMS_SLUG ) ) {
+			$this->enqueue_platforms();
+		}
+		if ( false !== strpos( $hook_suffix, self::CALENDAR_SLUG ) ) {
+			$day_js = FORWP_SOCIAL_PATH . 'assets/calendar.js';
+			wp_enqueue_script( 'forwp-social-calendar', FORWP_SOCIAL_URL . 'assets/calendar.js', array( 'wp-api-fetch' ), is_readable( $day_js ) ? (string) filemtime( $day_js ) : FORWP_SOCIAL_VERSION, true );
+		}
+	}
+
+	/**
+	 * Scripts of the Platforms page.
+	 *
+	 * @return void
+	 */
+	private function enqueue_platforms(): void {
+		$js = FORWP_SOCIAL_PATH . 'assets/platforms.js';
+		wp_enqueue_style( 'dashicons' );
+		wp_enqueue_media();
+		wp_enqueue_script( 'forwp-social-platforms', FORWP_SOCIAL_URL . 'assets/platforms.js', array( 'jquery', 'jquery-ui-sortable', 'wp-api-fetch' ), is_readable( $js ) ? (string) filemtime( $js ) : FORWP_SOCIAL_VERSION, true );
+		wp_localize_script(
+			'forwp-social-platforms',
+			'forwpSocialPlatforms',
+			array(
+				'data' => Rest_Platforms::payload(),
+				'i18n' => array(
+					'manual'        => __( 'Manual', '4wp-social' ),
+					'empty'         => __( 'No platforms yet. Add the first one.', '4wp-social' ),
+					'notConnected'  => __( 'not connected', '4wp-social' ),
+					'connect'       => __( 'Connect account', '4wp-social' ),
+					'off'           => __( 'off', '4wp-social' ),
+					'on'            => __( 'On', '4wp-social' ),
+					'edit'          => __( 'Edit', '4wp-social' ),
+					'delete'        => __( 'Delete', '4wp-social' ),
+					'save'          => __( 'Save', '4wp-social' ),
+					'cancel'        => __( 'Cancel', '4wp-social' ),
+					'name'          => __( 'Name', '4wp-social' ),
+					'key'           => __( 'Key (as in meta.json)', '4wp-social' ),
+					'source'        => __( 'Source', '4wp-social' ),
+					'boundTo'       => __( 'bound to', '4wp-social' ),
+					'openUrl'       => __( 'Open URL', '4wp-social' ),
+					'format'        => __( 'Format', '4wp-social' ),
+					'icon'          => __( 'Icon', '4wp-social' ),
+					'chooseIcon'    => __( 'Choose image', '4wp-social' ),
+					'useDefault'    => __( 'Use default', '4wp-social' ),
+					'drag'          => __( 'Drag to reorder', '4wp-social' ),
+					'confirmDelete' => __( 'Delete this platform? Published statuses on posts stay.', '4wp-social' ),
+					'failed'        => __( 'Request failed.', '4wp-social' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Platforms page.
+	 *
+	 * @return void
+	 */
+	public function render_platforms(): void {
+		if ( current_user_can( 'manage_options' ) ) {
+			include FORWP_SOCIAL_PATH . 'views/platforms-page.php';
+		}
+	}
+
+	/**
+	 * Calendar page: statistics of the month and its publications.
+	 *
+	 * @return void
+	 */
+	public function render_calendar(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view state.
+		$month  = Calendar::month( isset( $_GET['month'] ) ? sanitize_text_field( wp_unslash( $_GET['month'] ) ) : '' );
+		$events = Calendar::events( $month );
+		$stats  = Calendar::stats( $events );
+		$site   = Calendar::site_events( $month );
+
+		include FORWP_SOCIAL_PATH . 'views/calendar-page.php';
+	}
+
+	/**
+	 * URL of the Calendar page.
+	 *
+	 * @param string $month YYYY-MM.
+	 */
+	public static function calendar_url( string $month ): string {
+		return add_query_arg(
+			array(
+				'page'  => self::CALENDAR_SLUG,
+				'month' => $month,
+			),
+			admin_url( 'admin.php' )
+		);
 	}
 
 	/**
@@ -137,6 +242,11 @@ final class Admin_Menu {
 		$oauth     = OAuth_Controller::instance();
 		$providers = $oauth->providers();
 		$jobs      = 'queue' === $tab ? ( new Job_Repository() )->recent( 0, 100 ) : array();
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only view state.
+		$queue_view = isset( $_GET['view'] ) && 'month' === $_GET['view'] ? 'month' : 'list';
+		$month      = Calendar::month( isset( $_GET['month'] ) ? sanitize_text_field( wp_unslash( $_GET['month'] ) ) : '' );
+		// phpcs:enable
+		$events = 'queue' === $tab && 'month' === $queue_view ? Calendar::events( $month ) : array();
 
 		include FORWP_SOCIAL_PATH . 'views/settings-page.php';
 	}

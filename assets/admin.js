@@ -56,6 +56,23 @@
 		syncCard( card, input );
 	} );
 
+	// Saving and connecting come back with #platform in the URL: open that account.
+	function openFromHash() {
+		var target = window.location.hash.length > 1 ? document.getElementById( window.location.hash.slice( 1 ) ) : null;
+		var item = target ? target.closest( '.forwp-social-account-item' ) : null;
+		if ( ! item ) {
+			return;
+		}
+		item.open = true;
+		var setup = target.closest( '.forwp-social-setup' );
+		if ( setup ) {
+			setup.open = true;
+		}
+		target.scrollIntoView();
+	}
+	window.addEventListener( 'hashchange', openFromHash );
+	openFromHash();
+
 	document.addEventListener( 'keydown', function ( event ) {
 		if ( 'Enter' !== event.key && ' ' !== event.key ) {
 			return;

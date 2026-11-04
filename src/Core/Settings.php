@@ -37,6 +37,9 @@ final class Settings {
 			),
 			'auto_publish'     => false,
 			'delay_minutes'    => 0,
+			'manual_delay_minutes' => 1440,
+			// Off while 4WP SEO Helper still sends its own reminder: two plugins, two messages.
+			'manual_notify'    => false,
 			'default_privacy'  => 'public',
 			'caption_language' => 'en',
 		);
@@ -125,6 +128,8 @@ final class Settings {
 				'video'            => $video,
 				'auto_publish'     => ! empty( $input['auto_publish'] ),
 				'delay_minutes'    => max( 0, min( 10080, (int) ( $input['delay_minutes'] ?? 0 ) ) ),
+				'manual_delay_minutes' => max( 0, min( 10080, (int) ( $input['manual_delay_minutes'] ?? $current['manual_delay_minutes'] ) ) ),
+				'manual_notify'    => ! empty( $input['manual_notify'] ),
 				'default_privacy'  => $privacy,
 				'caption_language' => '' !== $language ? $language : 'en',
 			),

@@ -228,6 +228,52 @@
 		syncButton( $( this ).closest( '.forwp-social-box' ) );
 	} );
 
+	$( document ).on( 'click', '.forwp-social-mark', function ( e ) {
+		e.preventDefault();
+		var $btn = $( this );
+		var $row = $btn.closest( '[data-platform]' );
+		var $box = $btn.closest( '.forwp-social-manual-box' );
+		var $msg = $box.find( '.forwp-social-manual-msg' );
+		$btn.prop( 'disabled', true );
+		wp.apiFetch( {
+			path: '/forwp-social/v1/crosspost/published',
+			method: 'POST',
+			data: {
+				post_id: parseInt( $box.data( 'post-id' ), 10 ),
+				platform: String( $row.data( 'platform' ) ),
+				url: $row.find( '.forwp-social-mark-url' ).val(),
+				via: 'manual',
+			},
+		} ).then( function ( res ) {
+			var $link = $( '<a target="_blank" rel="noopener"></a>' ).attr( 'href', res.url ).text( i18n.markedDone );
+			$row.find( '.forwp-social-status' ).attr( 'data-status', 'published' ).empty().append( $link );
+			$row.find( '.forwp-social-mark-form' ).remove();
+			$msg.text( res.sync_error || '' );
+		} ).catch( function ( err ) {
+			$btn.prop( 'disabled', false );
+			$msg.text( ( err && err.message ) || i18n.failed );
+		} );
+	} );
+
+	$( document ).on( 'click', '.forwp-social-notify', function ( e ) {
+		e.preventDefault();
+		var $btn = $( this );
+		var $box = $btn.closest( '.forwp-social-manual-box' );
+		var $msg = $box.find( '.forwp-social-manual-msg' );
+		$btn.prop( 'disabled', true );
+		wp.apiFetch( {
+			path: '/forwp-social/v1/crosspost/notify',
+			method: 'POST',
+			data: { post_id: parseInt( $box.data( 'post-id' ), 10 ) },
+		} ).then( function () {
+			$btn.prop( 'disabled', false );
+			$msg.text( i18n.notifySent );
+		} ).catch( function ( err ) {
+			$btn.prop( 'disabled', false );
+			$msg.text( ( err && err.message ) || i18n.failed );
+		} );
+	} );
+
 	$( function () {
 		$( '.forwp-social-box' ).each( function () {
 			if ( syncButton( $( this ) ) ) {

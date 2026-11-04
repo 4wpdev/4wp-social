@@ -59,7 +59,17 @@ final class Job_Repository {
 			array( '%d', '%s', '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' )
 		);
 
-		return $ok ? (int) $wpdb->insert_id : 0;
+		if ( ! $ok ) {
+			return 0;
+		}
+
+		$id  = (int) $wpdb->insert_id;
+		$job = $this->find( $id );
+		if ( $job ) {
+			Status_Index::from_job( $job );
+		}
+
+		return $id;
 	}
 
 	/**
@@ -74,6 +84,11 @@ final class Job_Repository {
 		$fields['updated_at'] = current_time( 'mysql', true );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table.
 		$wpdb->update( Schema::jobs_table(), $fields, array( 'id' => $id ) );
+
+		$job = $this->find( $id );
+		if ( $job ) {
+			Status_Index::from_job( $job );
+		}
 	}
 
 	/**
@@ -138,6 +153,46 @@ final class Job_Repository {
 				'status'  => self::QUEUED,
 			)
 		);
+
+		foreach ( $this->recent( $post_id, 50 ) as $job ) {
+			if ( self::QUEUED === $job->status ) {
+				Status_Index::from_job( $job );
+			}
+		}
+	}
+
+	/**
+	 * Jobs still waiting or running, whatever their date.
+	 *
+	 * @return array<int, object>
+	 */
+	public function active(): array {
+		global $wpdb;
+
+		$table = Schema::jobs_table();
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table name.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE status IN (%s, %s) ORDER BY run_at ASC", self::QUEUED, self::PROCESSING ) );
+		// phpcs:enable
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
+	 * Jobs touched in a period, for the calendar.
+	 *
+	 * @param string $from UTC datetime.
+	 * @param string $to   UTC datetime.
+	 * @return array<int, object>
+	 */
+	public function between( string $from, string $to ): array {
+		global $wpdb;
+
+		$table = Schema::jobs_table();
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Custom table name.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table} WHERE updated_at BETWEEN %s AND %s OR run_at BETWEEN %s AND %s ORDER BY id DESC", $from, $to, $from, $to ) );
+		// phpcs:enable
+
+		return is_array( $rows ) ? $rows : array();
 	}
 
 	/**

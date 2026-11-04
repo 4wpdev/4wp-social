@@ -128,3 +128,23 @@ if ( ! class_exists( 'WP_Error' ) ) {
 		}
 	}
 }
+
+function esc_url_raw( $url ) {
+	return (string) $url;
+}
+
+function wp_parse_url( $url, $component = -1 ) {
+	return parse_url( (string) $url, $component );
+}
+
+function esc_attr( $text ) {
+	return htmlspecialchars( (string) $text, ENT_QUOTES );
+}
+
+function esc_html( $text ) {
+	return htmlspecialchars( (string) $text, ENT_QUOTES );
+}
+
+function esc_url( $url ) {
+	return (string) $url;
+}

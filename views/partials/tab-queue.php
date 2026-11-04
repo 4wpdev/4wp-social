@@ -4,7 +4,10 @@
  *
  * @package ForWP\Social
  *
- * @var array<int, object> $jobs
+ * @var array<int, object>               $jobs
+ * @var string                           $queue_view
+ * @var string                           $month
+ * @var array<int, array<string, mixed>> $events
  */
 
 use ForWP\Social\Admin\Admin_Menu;
@@ -25,7 +28,27 @@ $forwp_social_badges  = array(
 	<p class="forwp-social-intro-card__text"><?php esc_html_e( 'The queue runs every minute through WP-Cron, two uploads per run. Failed jobs retry three times with a growing pause; after that use Retry. TikTok jobs stay "processing" until TikTok finishes the upload.', '4wp-social' ); ?></p>
 </div>
 
-<?php if ( ! $jobs ) : ?>
+<p class="forwp-social-view-switch">
+	<a class="button<?php echo 'list' === $queue_view ? ' button-primary' : ''; ?>" href="<?php echo esc_url( Admin_Menu::tab_url( 'queue' ) ); ?>"><?php esc_html_e( 'List', '4wp-social' ); ?></a>
+	<a class="button<?php echo 'month' === $queue_view ? ' button-primary' : ''; ?>" href="<?php echo esc_url( Admin_Menu::tab_url( 'queue', array( 'view' => 'month' ) ) ); ?>"><?php esc_html_e( 'Month', '4wp-social' ); ?></a>
+</p>
+
+<?php if ( 'month' === $queue_view ) : ?>
+	<?php
+	$calendar_titles = false;
+	$site            = array();
+	$month_url       = static function ( string $forwp_social_month ): string {
+		return Admin_Menu::tab_url(
+			'queue',
+			array(
+				'view'  => 'month',
+				'month' => $forwp_social_month,
+			)
+		);
+	};
+	require FORWP_SOCIAL_PATH . 'views/partials/queue-month.php';
+	?>
+<?php elseif ( ! $jobs ) : ?>
 	<p class="forwp-social-empty"><?php esc_html_e( 'No publications yet. Use the 4WP Social box in the post editor, or publish a 4WP Drive package post.', '4wp-social' ); ?></p>
 <?php else : ?>
 	<table class="widefat striped forwp-social-table">

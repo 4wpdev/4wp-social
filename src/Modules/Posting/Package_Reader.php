@@ -89,16 +89,17 @@ final class Package_Reader implements Media_Source_Interface {
 	/**
 	 * Seconds to wait after publishing the original (meta.json republish.* wins over settings).
 	 *
-	 * @param array<string, mixed> $package meta.json data.
+	 * @param array<string, mixed> $package  meta.json data.
+	 * @param int|null             $fallback Seconds when meta.json has no delay (null = the API delay setting).
 	 */
-	public static function delay_seconds( array $package ): int {
+	public static function delay_seconds( array $package, ?int $fallback = null ): int {
 		$republish = isset( $package['republish'] ) && is_array( $package['republish'] ) ? $package['republish'] : array();
 		if ( isset( $republish['delay_hours'] ) || isset( $republish['delay_minutes'] ) ) {
 			return max( 0, (int) ( $republish['delay_hours'] ?? 0 ) ) * HOUR_IN_SECONDS
 				+ max( 0, (int) ( $republish['delay_minutes'] ?? 0 ) ) * MINUTE_IN_SECONDS;
 		}
 
-		return max( 0, (int) Settings::get( 'delay_minutes', 0 ) ) * MINUTE_IN_SECONDS;
+		return null !== $fallback ? max( 0, $fallback ) : max( 0, (int) Settings::get( 'delay_minutes', 0 ) ) * MINUTE_IN_SECONDS;
 	}
 
 	/**

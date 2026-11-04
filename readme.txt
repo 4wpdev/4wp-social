@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.4.0
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,13 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.5.0 =
+* Cross-posting center: Platforms page with a dynamic list. Each platform is manual or bound to one plugin connector; a connector binds to one platform only.
+* Status index per post and platform: "Social" column in post lists, Calendar page with site content first, month statistics and a day popup, Queue → List and Month, REST `forwp-social/v1/calendar`, read locally without GitHub requests.
+* Manual platforms: waiting status after a delay, "Mark as published" in the editor, Telegram reminder (off by default), REST `forwp-social/v1/crosspost*` for the browser extension.
+* Abilities: `forwp-social/calendar`, `forwp-social/scheduled`; `forwp-social/platforms` now lists manual platforms too.
+* WP-CLI: `wp forwp-social reindex`, `wp forwp-social migrate-seo [--dry-run]`.
 
 = 0.4.0 =
 * New platform: DEV.to. Connect with an API key; the key is verified before saving and stored encrypted.

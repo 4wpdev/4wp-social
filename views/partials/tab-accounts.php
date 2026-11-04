@@ -31,13 +31,7 @@ $forwp_social_icons   = array(
 	'tiktok.com'  => 'dashicons-video-alt3',
 );
 ?>
-<div class="forwp-social-intro-card">
-	<h2 class="forwp-social-intro-card__title"><?php esc_html_e( 'Brand accounts', '4wp-social' ); ?></h2>
-	<p class="forwp-social-intro-card__text">
-		<?php esc_html_e( 'The site publishes as your channel or profile. Each platform needs its own developer app: you create it once in the platform console, paste its two keys here and press Connect. Keys and tokens are stored encrypted. Visitor sign-in is not here — that is 4WP Account.', '4wp-social' ); ?>
-	</p>
-</div>
-
+<div class="forwp-social-account-list">
 <?php foreach ( $providers as $forwp_social_key => $forwp_social_provider ) : ?>
 	<?php
 	$forwp_social_guide   = $forwp_social_provider->get_setup_guide();
@@ -58,34 +52,31 @@ $forwp_social_icons   = array(
 		}
 		return $step === $forwp_social_current ? 'is-current' : '';
 	};
-	$forwp_social_steps   = array(
-		1 => __( 'Create app', '4wp-social' ),
-		2 => __( 'Paste keys', '4wp-social' ),
-		3 => __( 'Connect', '4wp-social' ),
-	);
 	?>
-	<section class="forwp-social-platform" id="<?php echo esc_attr( $forwp_social_anchor ); ?>">
-		<header class="forwp-social-platform__head">
-			<h3 class="forwp-social-platform__title">
-				<span class="dashicons <?php echo esc_attr( $forwp_social_icons[ $forwp_social_key ] ?? 'dashicons-share' ); ?>" aria-hidden="true"></span>
-				<?php echo esc_html( $forwp_social_provider->get_label() ); ?>
-				<?php if ( $forwp_social_conn['connected'] ) : ?>
-					<span class="forwp-social-badge forwp-social-badge--on"><?php esc_html_e( 'Connected', '4wp-social' ); ?></span>
-				<?php elseif ( $forwp_social_has_key ) : ?>
-					<span class="forwp-social-badge forwp-social-badge--warn"><?php esc_html_e( 'Keys saved — not connected', '4wp-social' ); ?></span>
-				<?php else : ?>
-					<span class="forwp-social-badge"><?php esc_html_e( 'Not set up', '4wp-social' ); ?></span>
+	<details class="forwp-social-platform forwp-social-account-item" name="forwp-social-accounts" id="<?php echo esc_attr( $forwp_social_anchor ); ?>" <?php echo $notice_platform === $forwp_social_key ? 'open' : ''; ?>>
+		<summary class="forwp-social-platform__row">
+			<span class="dashicons <?php echo esc_attr( $forwp_social_icons[ $forwp_social_key ] ?? 'dashicons-share' ); ?>" aria-hidden="true"></span>
+			<span class="forwp-social-platform__name">
+				<strong><?php echo esc_html( $forwp_social_provider->get_label() ); ?></strong>
+				<?php if ( $forwp_social_conn['connected'] && '' !== $forwp_social_conn['account'] ) : ?>
+					<span class="forwp-social-muted"><?php echo esc_html( $forwp_social_conn['account'] ); ?></span>
 				<?php endif; ?>
-			</h3>
-			<ol class="forwp-social-progress" aria-label="<?php esc_attr_e( 'Setup progress', '4wp-social' ); ?>">
-				<?php foreach ( $forwp_social_steps as $forwp_social_n => $forwp_social_step_label ) : ?>
-					<li class="<?php echo esc_attr( $forwp_social_state( $forwp_social_n ) ); ?>">
-						<span class="forwp-social-progress__dot"><?php echo $forwp_social_n < $forwp_social_current ? '&#10003;' : esc_html( (string) $forwp_social_n ); ?></span>
-						<?php echo esc_html( $forwp_social_step_label ); ?>
-					</li>
-				<?php endforeach; ?>
-			</ol>
-		</header>
+			</span>
+			<?php if ( $forwp_social_conn['connected'] ) : ?>
+				<span class="forwp-social-badge forwp-social-badge--on"><?php esc_html_e( 'Connected', '4wp-social' ); ?></span>
+			<?php elseif ( $forwp_social_has_key ) : ?>
+				<span class="forwp-social-badge forwp-social-badge--warn"><?php esc_html_e( 'Keys saved', '4wp-social' ); ?></span>
+			<?php else : ?>
+				<span class="forwp-social-badge"><?php esc_html_e( 'Not set up', '4wp-social' ); ?></span>
+			<?php endif; ?>
+			<span class="forwp-social-account-item__chevron dashicons dashicons-arrow-down-alt2" aria-hidden="true"></span>
+		</summary>
+		<div class="forwp-social-account-item__body">
+
+		<?php if ( $forwp_social_conn['connected'] ) : ?>
+			<details class="forwp-social-setup">
+				<summary><?php esc_html_e( 'App keys and redirect URI', '4wp-social' ); ?></summary>
+		<?php endif; ?>
 
 		<?php /* Step 1 — create the app. */ ?>
 		<div class="forwp-social-step <?php echo esc_attr( $forwp_social_state( 1 ) ); ?>">
@@ -104,8 +95,8 @@ $forwp_social_icons   = array(
 					$forwp_social_loop   = $oauth->suggested_loopback_uri( $forwp_social_key );
 					$forwp_social_custom = OAuth_Controller::redirect_overrides()[ $forwp_social_key ] ?? '';
 					?>
-					<div class="forwp-social-panel forwp-social-devmode">
-						<h5 class="forwp-social-section-title"><?php esc_html_e( 'Development mode — OAuth redirect', '4wp-social' ); ?></h5>
+					<details class="forwp-social-devmode" <?php echo '' === $forwp_social_custom ? 'open' : ''; ?>>
+						<summary><?php esc_html_e( 'Development mode: OAuth redirect', '4wp-social' ); ?></summary>
 						<p class="forwp-social-muted"><?php esc_html_e( 'Local site: the platform rejects this domain. Use the loopback address (127.0.0.1 + your Local port) instead, like 4WP Drive does. Save it here, then paste the same URI into the console.', '4wp-social' ); ?></p>
 						<?php if ( empty( $forwp_social_guide['loopback_allowed'] ) ) : ?>
 							<p class="forwp-social-callout forwp-social-callout--warn"><?php esc_html_e( 'TikTok may reject a loopback redirect (it requires https and a registered domain) — not verified yet. If the console refuses it, connect TikTok on staging.', '4wp-social' ); ?></p>
@@ -120,13 +111,7 @@ $forwp_social_icons   = array(
 								<button type="submit" name="reset" value="1" class="button"><?php esc_html_e( 'Reset', '4wp-social' ); ?></button>
 							<?php endif; ?>
 						</form>
-						<p class="forwp-social-field__help">
-							<?php
-							/* translators: %s: suggested loopback URI. */
-							echo esc_html( sprintf( __( 'Suggested for this site: %s', '4wp-social' ), $forwp_social_loop ) );
-							?>
-						</p>
-					</div>
+					</details>
 				<?php endif; ?>
 
 				<?php foreach ( $forwp_social_issues as $forwp_social_issue ) : ?>
@@ -179,6 +164,10 @@ $forwp_social_icons   = array(
 				</form>
 			</div>
 		</div>
+
+		<?php if ( $forwp_social_conn['connected'] ) : ?>
+			</details>
+		<?php endif; ?>
 
 		<?php /* Step 3 — connect the account. */ ?>
 		<div class="forwp-social-step <?php echo esc_attr( $forwp_social_state( 3 ) ); ?>" id="<?php echo esc_attr( OAuth_Controller::connect_anchor( $forwp_social_key ) ); ?>">
@@ -236,9 +225,11 @@ $forwp_social_icons   = array(
 				<?php endif; ?>
 			</div>
 		</div>
-	</section>
+		</div>
+	</details>
 <?php endforeach; ?>
 
 <?php require FORWP_SOCIAL_PATH . 'views/partials/account-bluesky.php'; ?>
 
 <?php require FORWP_SOCIAL_PATH . 'views/partials/account-devto.php'; ?>
+</div>
