@@ -9,6 +9,8 @@
  * @var callable                         $month_url        URL of a month (YYYY-MM).
  * @var bool                             $calendar_titles  Show post titles in the cells.
  * @var array<int, array<string, mixed>> $site             Site content, shown first in each day.
+ * @var array<int, array<string, mixed>> $adjacent_events  Optional: events of the leading/trailing days of nearby months.
+ * @var array<int, array<string, mixed>> $adjacent_site    Optional: site content of those days.
  */
 
 use ForWP\Social\Modules\Posting\Platform_Icons;
@@ -23,15 +25,50 @@ $forwp_social_start  = (int) get_option( 'start_of_week', 1 );
 $forwp_social_offset = ( (int) $forwp_social_first->format( 'w' ) - $forwp_social_start + 7 ) % 7;
 $forwp_social_labels = Platform_Registry::all( false );
 
+// Leading and trailing days of the neighbour months fill the grid, in a lighter style.
+$forwp_social_trail = ( 7 - ( $forwp_social_offset + $forwp_social_days ) % 7 ) % 7;
+$forwp_social_dates = array();
+for ( $forwp_social_i = $forwp_social_offset; $forwp_social_i > 0; $forwp_social_i-- ) {
+	$forwp_social_dates[] = array( $forwp_social_first->modify( '-' . $forwp_social_i . ' days' )->format( 'Y-m-d' ), true );
+}
+for ( $forwp_social_day = 1; $forwp_social_day <= $forwp_social_days; $forwp_social_day++ ) {
+	$forwp_social_dates[] = array( sprintf( '%s-%02d', $month, $forwp_social_day ), false );
+}
+$forwp_social_last = $forwp_social_first->modify( 'last day of this month' );
+for ( $forwp_social_i = 1; $forwp_social_i <= $forwp_social_trail; $forwp_social_i++ ) {
+	$forwp_social_dates[] = array( $forwp_social_last->modify( '+' . $forwp_social_i . ' days' )->format( 'Y-m-d' ), true );
+}
+
+if ( ! isset( $adjacent_events ) || ! isset( $adjacent_site ) ) {
+	$forwp_social_with_site = ! empty( $site );
+	$adjacent_events = array();
+	$adjacent_site   = array();
+	$forwp_social_near = array();
+	if ( $forwp_social_offset > 0 ) {
+		$forwp_social_near[] = $forwp_social_first->modify( '-1 month' )->format( 'Y-m' );
+	}
+	if ( $forwp_social_trail > 0 ) {
+		$forwp_social_near[] = $forwp_social_first->modify( '+1 month' )->format( 'Y-m' );
+	}
+	foreach ( $forwp_social_near as $forwp_social_m ) {
+		$adjacent_events = array_merge( $adjacent_events, \ForWP\Social\Modules\Posting\Calendar::events( $forwp_social_m ) );
+		if ( $forwp_social_with_site ) {
+			$adjacent_site = array_merge( $adjacent_site, \ForWP\Social\Modules\Posting\Calendar::site_events( $forwp_social_m ) );
+		}
+	}
+}
+$forwp_social_all_events = array_merge( $events, (array) $adjacent_events );
+$forwp_social_all_site   = array_merge( $site, (array) $adjacent_site );
+
 $forwp_social_site_by_day = array();
-foreach ( $site as $forwp_social_item ) {
+foreach ( $forwp_social_all_site as $forwp_social_item ) {
 	$forwp_social_site_by_day[ (string) $forwp_social_item['date'] ][] = $forwp_social_item;
 }
 
-$forwp_social_terms_by_day = \ForWP\Social\Modules\Posting\Calendar::day_terms( $events, $site );
+$forwp_social_terms_by_day = \ForWP\Social\Modules\Posting\Calendar::day_terms( $forwp_social_all_events, $forwp_social_all_site );
 
 $forwp_social_by_day = array();
-foreach ( $events as $forwp_social_event ) {
+foreach ( $forwp_social_all_events as $forwp_social_event ) {
 	$forwp_social_by_day[ (string) $forwp_social_event['date'] ][] = $forwp_social_event;
 }
 ?>
@@ -57,12 +94,12 @@ foreach ( $events as $forwp_social_event ) {
 	<?php for ( $forwp_social_i = 0; $forwp_social_i < 7; $forwp_social_i++ ) : ?>
 		<div class="forwp-social-month__head"><?php echo esc_html( $GLOBALS['wp_locale']->get_weekday_abbrev( $GLOBALS['wp_locale']->get_weekday( ( $forwp_social_start + $forwp_social_i ) % 7 ) ) ); ?></div>
 	<?php endfor; ?>
-	<?php for ( $forwp_social_i = 0; $forwp_social_i < $forwp_social_offset; $forwp_social_i++ ) : ?>
-		<div class="forwp-social-month__cell is-empty"></div>
-	<?php endfor; ?>
-	<?php for ( $forwp_social_day = 1; $forwp_social_day <= $forwp_social_days; $forwp_social_day++ ) : ?>
-		<?php $forwp_social_date = sprintf( '%s-%02d', $month, $forwp_social_day ); ?>
-		<div class="forwp-social-month__cell<?php echo wp_date( 'Y-m-d' ) === $forwp_social_date ? ' is-today' : ''; ?>">
+	<?php foreach ( $forwp_social_dates as $forwp_social_cell ) : ?>
+		<?php
+		$forwp_social_date = $forwp_social_cell[0];
+		$forwp_social_day  = (int) substr( $forwp_social_date, 8, 2 );
+		?>
+		<div class="forwp-social-month__cell<?php echo wp_date( 'Y-m-d' ) === $forwp_social_date ? ' is-today' : ''; ?><?php echo $forwp_social_cell[1] ? ' is-adjacent' : ''; ?>">
 			<div class="forwp-social-month__top">
 				<span class="forwp-social-month__day"><?php echo esc_html( (string) $forwp_social_day ); ?></span>
 				<?php if ( $calendar_titles ) : ?>
@@ -105,8 +142,5 @@ foreach ( $events as $forwp_social_event ) {
 				</a>
 			<?php endforeach; ?>
 		</div>
-	<?php endfor; ?>
-	<?php for ( $forwp_social_i = 0; $forwp_social_i < ( 7 - ( $forwp_social_offset + $forwp_social_days ) % 7 ) % 7; $forwp_social_i++ ) : ?>
-		<div class="forwp-social-month__cell is-empty"></div>
-	<?php endfor; ?>
+	<?php endforeach; ?>
 </div>

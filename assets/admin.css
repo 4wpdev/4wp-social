@@ -293,3 +293,8 @@ details.forwp-social-devmode > summary { margin-bottom: 8px; }
 	background: #e7f5ea;
 	color: #00450c;
 }
+
+/* Days of the neighbour months: same content, less accent */
+.forwp-social-month__cell.is-adjacent { background: #f6f7f7; }
+.forwp-social-month__cell.is-adjacent > * { opacity: 0.55; }
+.forwp-social-month__cell.is-adjacent:hover > * { opacity: 0.85; }
