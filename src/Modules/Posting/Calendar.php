@@ -458,6 +458,57 @@ final class Calendar {
 	}
 
 	/**
+	 * Series taxonomies shown per day, in priority order (4WP Planner uses the same list).
+	 *
+	 * @return string[]
+	 */
+	public static function series_taxonomies(): array {
+		$list = apply_filters( 'forwp_social_series_taxonomies', array( 'video-series', 'category' ) );
+
+		return array_values( array_filter( (array) $list, 'taxonomy_exists' ) );
+	}
+
+	/**
+	 * Series terms per day from posts with publications (done or planned) and site content of that day.
+	 * A post in several terms adds each of them.
+	 *
+	 * @param array<int, array<string, mixed>> $events Calendar events.
+	 * @param array<int, array<string, mixed>> $site   Site content rows.
+	 * @return array<string, array<int, array{taxonomy: string, id: int, name: string}>>
+	 */
+	public static function day_terms( array $events, array $site = array() ): array {
+		$taxonomies = self::series_taxonomies();
+		$default    = (int) get_option( 'default_category' );
+		$by_day     = array();
+
+		foreach ( array_merge( $events, $site ) as $row ) {
+			$date    = (string) ( $row['date'] ?? '' );
+			$post_id = (int) ( $row['post_id'] ?? $row['id'] ?? 0 );
+			if ( '' === $date || $post_id <= 0 ) {
+				continue;
+			}
+			foreach ( $taxonomies as $taxonomy ) {
+				$terms = get_the_terms( $post_id, $taxonomy );
+				if ( ! is_array( $terms ) ) {
+					continue;
+				}
+				foreach ( $terms as $term ) {
+					if ( 'category' === $taxonomy && (int) $term->term_id === $default ) {
+						continue;
+					}
+					$by_day[ $date ][ $taxonomy . ':' . $term->term_id ] = array(
+						'taxonomy' => $taxonomy,
+						'id'       => (int) $term->term_id,
+						'name'     => $term->name,
+					);
+				}
+			}
+		}
+
+		return array_map( 'array_values', $by_day );
+	}
+
+	/**
 	 * Events of a month with post titles and edit links.
 	 *
 	 * @param string $month YYYY-MM.

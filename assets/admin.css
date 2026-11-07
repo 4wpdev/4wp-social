@@ -267,3 +267,29 @@ details.forwp-social-devmode > summary { margin-bottom: 8px; }
 #forwp-social .handle-order-higher, #forwp-social .handle-order-lower,
 #forwp-social-articles .handle-order-higher, #forwp-social-articles .handle-order-lower,
 #forwp-social-manual .handle-order-higher, #forwp-social-manual .handle-order-lower { display: none; }
+
+/* Series of the day (video-series, category) */
+.forwp-social-month__series {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	margin: 0 0 6px;
+	padding: 0;
+	list-style: none;
+}
+
+.forwp-social-series {
+	margin: 0;
+	padding: 1px 6px;
+	border-radius: 999px;
+	background: #f0f0f1;
+	color: #1d2327;
+	font-size: 11px;
+	line-height: 1.6;
+	white-space: nowrap;
+}
+
+.forwp-social-series--video-series {
+	background: #e7f5ea;
+	color: #00450c;
+}

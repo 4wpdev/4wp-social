@@ -28,6 +28,8 @@ foreach ( $site as $forwp_social_item ) {
 	$forwp_social_site_by_day[ (string) $forwp_social_item['date'] ][] = $forwp_social_item;
 }
 
+$forwp_social_terms_by_day = \ForWP\Social\Modules\Posting\Calendar::day_terms( $events, $site );
+
 $forwp_social_by_day = array();
 foreach ( $events as $forwp_social_event ) {
 	$forwp_social_by_day[ (string) $forwp_social_event['date'] ][] = $forwp_social_event;
@@ -67,6 +69,13 @@ foreach ( $events as $forwp_social_event ) {
 					<button type="button" class="forwp-social-month__zoom" data-date="<?php echo esc_attr( $forwp_social_date ); ?>" aria-haspopup="dialog" title="<?php esc_attr_e( 'Open day', '4wp-social' ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: date. */ __( 'Open day %s', '4wp-social' ), $forwp_social_date ) ); ?>"><span class="dashicons dashicons-search" aria-hidden="true"></span></button>
 				<?php endif; ?>
 			</div>
+			<?php if ( ! empty( $forwp_social_terms_by_day[ $forwp_social_date ] ) ) : ?>
+				<ul class="forwp-social-month__series" aria-label="<?php esc_attr_e( 'Series', '4wp-social' ); ?>">
+					<?php foreach ( $forwp_social_terms_by_day[ $forwp_social_date ] as $forwp_social_term ) : ?>
+						<li class="forwp-social-series forwp-social-series--<?php echo esc_attr( $forwp_social_term['taxonomy'] ); ?>"><?php echo esc_html( $forwp_social_term['name'] ); ?></li>
+					<?php endforeach; ?>
+				</ul>
+			<?php endif; ?>
 			<?php foreach ( $forwp_social_site_by_day[ $forwp_social_date ] ?? array() as $forwp_social_item ) : ?>
 				<?php
 				$forwp_social_is_update = 'update' === $forwp_social_item['action'];
