@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.5.0
+Stable tag: 0.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,11 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.5.3 =
+* The 4WP Social Media box shows on pages and on any post type that has a meta.json package, not only on videos.
+* Cross-posting board (browser extension) lists packaged posts of every public post type.
+* TikTok: videos up to 64 MB upload as one chunk. A 10–20 MB file was sent as one 10 MB chunk and TikTok rejected it ("The chunk size is invalid").
 
 = 0.5.0 =
 * Cross-posting center: Platforms page with a dynamic list. Each platform is manual or bound to one plugin connector; a connector binds to one platform only.

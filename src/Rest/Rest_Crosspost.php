@@ -422,7 +422,8 @@ final class Rest_Crosspost {
 	private static function waiting_materials( string $key ): array {
 		$ids = get_posts(
 			array(
-				'post_type'      => Status_Column::post_types(),
+				// Any public type: only posts with a package have the status meta.
+				'post_type'      => array_values( array_unique( array_merge( Status_Column::post_types(), array_diff( get_post_types( array( 'public' => true ) ), array( 'attachment' ) ) ) ) ),
 				'post_status'    => 'publish',
 				'posts_per_page' => 100,
 				'fields'         => 'ids',

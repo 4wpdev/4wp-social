@@ -22,7 +22,7 @@ final class Post_Metabox {
 	 * @return void
 	 */
 	public static function boot(): void {
-		add_action( 'add_meta_boxes', array( self::class, 'register' ) );
+		add_action( 'add_meta_boxes', array( self::class, 'register' ), 10, 2 );
 		add_action( 'add_meta_boxes', array( self::class, 'register_articles' ), 10, 2 );
 		add_action( 'add_meta_boxes', array( self::class, 'register_manual' ), 10, 2 );
 		add_action( 'save_post', array( self::class, 'save' ) );
@@ -37,30 +37,40 @@ final class Post_Metabox {
 	public static function post_types(): array {
 		/**
 		 * Filter post types that get the 4WP Social box.
-		 * Empty by default: the Video module adds its post type; other types opt in here.
+		 * Pages by default (hub pages carry a desktop video); the Video module adds its post type.
 		 *
 		 * @param array<int, string> $types Post types.
 		 */
-		$types = apply_filters( 'forwp_social_post_types', array() );
+		$types = apply_filters( 'forwp_social_post_types', array( 'page' ) );
 
 		return is_array( $types ) ? array_values( array_map( 'strval', $types ) ) : array();
 	}
 
 	/**
+	 * Media box: the listed post types, plus any post type when the post has a meta.json package.
+	 *
+	 * @param string $post_type Post type.
+	 * @param mixed  $post      Post.
+	 */
+	public static function has_media_box( string $post_type, $post ): bool {
+		if ( in_array( $post_type, self::post_types(), true ) ) {
+			return true;
+		}
+
+		return $post instanceof WP_Post && ( new Package_Reader() )->is_package_post( (int) $post->ID );
+	}
+
+	/**
+	 * @param string $post_type Post type.
+	 * @param mixed  $post      Post.
 	 * @return void
 	 */
-	public static function register(): void {
-		if ( ! current_user_can( 'publish_posts' ) ) {
+	public static function register( $post_type = '', $post = null ): void {
+		if ( ! current_user_can( 'publish_posts' ) || '' === (string) $post_type || ! self::has_media_box( (string) $post_type, $post ) ) {
 			return;
 		}
 
-		$types = self::post_types();
-		if ( empty( $types ) ) {
-			// add_meta_box() with no screens would fall back to the current screen.
-			return;
-		}
-
-		add_meta_box( 'forwp-social', __( '4WP Social Media', '4wp-social' ), array( self::class, 'render' ), $types, 'side' );
+		add_meta_box( 'forwp-social', __( '4WP Social Media', '4wp-social' ), array( self::class, 'render' ), (string) $post_type, 'side' );
 	}
 
 	/**
@@ -199,8 +209,8 @@ final class Post_Metabox {
 			return;
 		}
 
-		$media_box = in_array( $screen->post_type, self::post_types(), true );
 		$post      = get_post();
+		$media_box = self::has_media_box( (string) $screen->post_type, $post );
 		if ( ! $media_box && ! ( $post && ( ( new Package_Reader() )->is_package_post( (int) $post->ID ) || self::manual_entries( (int) $post->ID ) ) ) ) {
 			return;
 		}

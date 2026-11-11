@@ -24,6 +24,11 @@ final class TikTok_Client {
 	public const CHUNK_SIZE = 10 * 1024 * 1024;
 
 	/**
+	 * Files up to this size go as one chunk. With one chunk TikTok requires chunk_size = video_size.
+	 */
+	public const SINGLE_MAX = 64 * 1024 * 1024;
+
+	/**
 	 * @var string
 	 */
 	private $token;
@@ -36,14 +41,15 @@ final class TikTok_Client {
 	}
 
 	/**
-	 * Chunk plan for a file: whole file up to CHUNK_SIZE, otherwise floor(size / CHUNK_SIZE)
+	 * Chunk plan for a file: whole file up to SINGLE_MAX, otherwise floor(size / CHUNK_SIZE)
 	 * chunks with the remainder added to the last one (TikTok rule).
+	 * A 12 MB file as one 10 MB "chunk" is rejected: "The chunk size is invalid".
 	 *
 	 * @param int $size File size in bytes.
 	 * @return array{chunk_size: int, total_chunk_count: int}
 	 */
 	public static function chunk_plan( int $size ): array {
-		if ( $size <= self::CHUNK_SIZE ) {
+		if ( $size <= self::SINGLE_MAX ) {
 			return array(
 				'chunk_size'        => $size,
 				'total_chunk_count' => 1,

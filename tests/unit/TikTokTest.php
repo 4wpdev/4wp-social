@@ -24,12 +24,18 @@ class TikTokTest extends TestCase {
 		$this->assertSame( array( 'chunk_size' => 8535626, 'total_chunk_count' => 1 ), TikTok_Client::chunk_plan( 8535626 ) );
 	}
 
+	public function test_file_between_chunk_and_single_limit_is_one_chunk(): void {
+		// 4wpdev-sdd-wordpress-desktop.mp4: one 10 MB chunk for 11.98 MB was "The chunk size is invalid".
+		$this->assertSame( array( 'chunk_size' => 11982068, 'total_chunk_count' => 1 ), TikTok_Client::chunk_plan( 11982068 ) );
+		$this->assertSame( 1, TikTok_Client::chunk_plan( 64 * self::MB )['total_chunk_count'] );
+	}
+
 	public function test_large_file_puts_remainder_in_last_chunk(): void {
-		$size = 25 * self::MB + 123;
+		$size = 75 * self::MB + 123;
 		$plan = TikTok_Client::chunk_plan( $size );
 
 		$this->assertSame( 10 * self::MB, $plan['chunk_size'] );
-		$this->assertSame( 2, $plan['total_chunk_count'] );
+		$this->assertSame( 7, $plan['total_chunk_count'] );
 		$last = $size - ( $plan['total_chunk_count'] - 1 ) * $plan['chunk_size'];
 		$this->assertGreaterThanOrEqual( 5 * self::MB, $plan['chunk_size'] );
 		$this->assertLessThanOrEqual( 128 * self::MB, $last );
