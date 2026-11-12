@@ -84,7 +84,11 @@ final class Queue {
 	 *
 	 * @return void
 	 */
-	public static function run(): void {
+	public static function run( int $job_id = 0 ): void {
+		// Off production nothing goes out on its own: only "Run now" / "Check now" on one job.
+		if ( 0 === $job_id && ! self::auto_publish() ) {
+			return;
+		}
 		if ( get_transient( self::LOCK ) ) {
 			return;
 		}
@@ -96,11 +100,32 @@ final class Queue {
 			}
 
 			$service = new Posting_Service();
-			foreach ( ( new Job_Repository() )->due( self::BATCH ) as $job ) {
+			$repo    = new Job_Repository();
+			if ( $job_id > 0 ) {
+				$job = $repo->find( $job_id );
+				if ( $job && in_array( (string) $job->status, array( Job_Repository::QUEUED, Job_Repository::PROCESSING ), true ) ) {
+					$service->run( $job );
+				}
+				return;
+			}
+
+			foreach ( $repo->due( self::BATCH ) as $job ) {
 				$service->run( $job );
 			}
 		} finally {
 			delete_transient( self::LOCK );
 		}
+	}
+
+	/**
+	 * Whether the queue publishes on its own: production only (filter forwp_social_auto_publish overrides).
+	 */
+	public static function auto_publish(): bool {
+		/**
+		 * Let the queue publish without a manual run.
+		 *
+		 * @param bool $auto True on production.
+		 */
+		return (bool) apply_filters( 'forwp_social_auto_publish', 'production' === wp_get_environment_type() );
 	}
 }

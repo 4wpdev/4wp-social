@@ -35,7 +35,8 @@ final class Platform_Registry {
 			array( 'daily.dev', 'daily.dev', '', 'https://app.daily.dev/', true ),
 			array( 'linkedin.com', 'LinkedIn', '', 'https://www.linkedin.com/feed/', true ),
 			array( 'reddit.com', 'Reddit', '', 'https://www.reddit.com/submit', false ),
-			array( 'facebook.com', 'Facebook', '', 'https://www.facebook.com/', false ),
+			array( 'facebook.com', 'Facebook', 'facebook.com', 'https://www.facebook.com/', false ),
+			array( 'instagram.com', 'Instagram', 'instagram.com', 'https://www.instagram.com/', false ),
 		);
 
 		$out = array();

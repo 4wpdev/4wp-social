@@ -13,6 +13,7 @@ use ForWP\Social\Core\Module_Registry;
 use ForWP\Social\Core\Settings;
 use ForWP\Social\Modules\Posting\Calendar;
 use ForWP\Social\Modules\Posting\Job_Repository;
+use ForWP\Social\Modules\Posting\Queue;
 use ForWP\Social\Rest\Rest_Platforms;
 
 defined( 'ABSPATH' ) || exit;
@@ -31,6 +32,8 @@ final class Admin_Menu {
 	private const SAVE_SETTINGS    = 'forwp_social_save_settings';
 	private const SAVE_CREDENTIALS = 'forwp_social_save_credentials';
 	private const RETRY_JOB        = 'forwp_social_retry_job';
+	private const RUN_JOB          = 'forwp_social_run_job';
+	private const DELETE_JOB       = 'forwp_social_delete_job';
 	private const SAVE_REDIRECT    = 'forwp_social_save_redirect';
 
 	/**
@@ -57,6 +60,8 @@ final class Admin_Menu {
 		add_action( 'admin_post_' . self::SAVE_SETTINGS, array( $this, 'handle_save_settings' ) );
 		add_action( 'admin_post_' . self::SAVE_CREDENTIALS, array( $this, 'handle_save_credentials' ) );
 		add_action( 'admin_post_' . self::RETRY_JOB, array( $this, 'handle_retry_job' ) );
+		add_action( 'admin_post_' . self::RUN_JOB, array( $this, 'handle_run_job' ) );
+		add_action( 'admin_post_' . self::DELETE_JOB, array( $this, 'handle_delete_job' ) );
 		add_action( 'admin_post_' . self::SAVE_REDIRECT, array( $this, 'handle_save_redirect' ) );
 	}
 
@@ -217,6 +222,8 @@ final class Admin_Menu {
 			'tested'       => __( 'Connection works: the token was refreshed and the account read.', '4wp-social' ),
 			'retried'      => __( 'Job queued again. The queue runs every minute.', '4wp-social' ),
 			'redirect_saved' => __( 'Redirect URI saved. Put the same URI into the platform console.', '4wp-social' ),
+			'job_run'        => __( 'Job run now. See its status below; processing jobs are checked by the queue every minute.', '4wp-social' ),
+			'job_deleted'    => __( 'Job deleted from the queue.', '4wp-social' ),
 		);
 	}
 
@@ -298,7 +305,8 @@ final class Admin_Menu {
 			Credentials_Store::save(
 				$platform,
 				isset( $_POST['client_id'] ) ? sanitize_text_field( wp_unslash( $_POST['client_id'] ) ) : '',
-				isset( $_POST['client_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['client_secret'] ) ) : ''
+				isset( $_POST['client_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['client_secret'] ) ) : '',
+				isset( $_POST['config_id'] ) ? array( 'config_id' => sanitize_text_field( wp_unslash( $_POST['config_id'] ) ) ) : null
 			);
 		}
 
@@ -353,6 +361,59 @@ final class Admin_Menu {
 	}
 
 	/**
+	 * Run a queued or failed job now, without waiting for WP-Cron.
+	 *
+	 * @return void
+	 */
+	public function handle_run_job(): void {
+		$id = isset( $_POST['job_id'] ) ? absint( $_POST['job_id'] ) : 0;
+		check_admin_referer( self::RUN_JOB . '_' . $id );
+		$this->require_admin();
+
+		$repo = new Job_Repository();
+		$job  = $repo->find( $id );
+		if ( $job && Job_Repository::PROCESSING === $job->status ) {
+			Queue::run( $id );
+		} elseif ( $job && Job_Repository::is_actionable( $job ) ) {
+			$fields = array( 'run_at' => current_time( 'mysql', true ) );
+			if ( Job_Repository::FAILED === $job->status ) {
+				$fields += array(
+					'status'     => Job_Repository::QUEUED,
+					'attempts'   => 0,
+					'reference'  => '',
+					'started_at' => null,
+					'message'    => '',
+				);
+			}
+			$repo->update( $id, $fields );
+			Queue::run( $id );
+		}
+
+		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_run' ) ) );
+		exit;
+	}
+
+	/**
+	 * Delete a job that is not published and not processing.
+	 *
+	 * @return void
+	 */
+	public function handle_delete_job(): void {
+		$id = isset( $_POST['job_id'] ) ? absint( $_POST['job_id'] ) : 0;
+		check_admin_referer( self::DELETE_JOB . '_' . $id );
+		$this->require_admin();
+
+		$repo = new Job_Repository();
+		$job  = $repo->find( $id );
+		if ( $job && Job_Repository::is_actionable( $job ) ) {
+			$repo->delete( $id );
+		}
+
+		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_deleted' ) ) );
+		exit;
+	}
+
+	/**
 	 * Action names for the view.
 	 *
 	 * @return array<string, string>
@@ -362,6 +423,8 @@ final class Admin_Menu {
 			'save_settings'    => self::SAVE_SETTINGS,
 			'save_credentials' => self::SAVE_CREDENTIALS,
 			'retry_job'        => self::RETRY_JOB,
+			'run_job'          => self::RUN_JOB,
+			'delete_job'       => self::DELETE_JOB,
 			'save_redirect'    => self::SAVE_REDIRECT,
 		);
 	}

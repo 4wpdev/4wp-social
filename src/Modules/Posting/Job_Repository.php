@@ -241,4 +241,35 @@ final class Job_Repository {
 
 		return is_array( $rows ) ? $rows : array();
 	}
+
+	/**
+	 * Whether the admin may run or delete a job: not published and not mid-upload on the platform.
+	 *
+	 * @param object $job Job row.
+	 */
+	public static function is_actionable( object $job ): bool {
+		return in_array( (string) $job->status, array( self::QUEUED, self::FAILED ), true );
+	}
+
+	/**
+	 * Delete a job row and drop its status from the post index (meta.json and other jobs are re-read).
+	 *
+	 * @param int $id Job id.
+	 */
+	public function delete( int $id ): bool {
+		global $wpdb;
+
+		$job = $this->find( $id );
+		if ( ! $job ) {
+			return false;
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery,WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom table.
+		$wpdb->delete( Schema::jobs_table(), array( 'id' => $id ) );
+
+		Status_Index::forget( (int) $job->post_id, (string) $job->platform );
+		Status_Index::rebuild( (int) $job->post_id );
+
+		return true;
+	}
 }

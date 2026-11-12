@@ -27,8 +27,9 @@ $forwp_social_html    = array(
 	),
 );
 $forwp_social_icons   = array(
-	'youtube.com' => 'dashicons-youtube',
-	'tiktok.com'  => 'dashicons-video-alt3',
+	'youtube.com'  => 'dashicons-youtube',
+	'tiktok.com'   => 'dashicons-video-alt3',
+	'facebook.com' => 'dashicons-facebook',
 );
 ?>
 <div class="forwp-social-account-list">
@@ -90,7 +91,7 @@ $forwp_social_icons   = array(
 					<button type="button" class="button forwp-social-copy-btn" data-target="<?php echo esc_attr( $forwp_social_uri_id ); ?>" data-copied="<?php esc_attr_e( 'Copied', '4wp-social' ); ?>"><?php esc_html_e( 'Copy', '4wp-social' ); ?></button>
 				</div>
 
-				<?php if ( OAuth_Controller::is_local_site() ) : ?>
+				<?php if ( OAuth_Controller::is_local_site() && 'facebook.com' !== $forwp_social_key ) : // Meta redirects the browser to https .local as is. ?>
 					<?php
 					$forwp_social_loop   = $oauth->suggested_loopback_uri( $forwp_social_key );
 					$forwp_social_custom = OAuth_Controller::redirect_overrides()[ $forwp_social_key ] ?? '';
@@ -98,7 +99,7 @@ $forwp_social_icons   = array(
 					<details class="forwp-social-devmode" <?php echo '' === $forwp_social_custom ? 'open' : ''; ?>>
 						<summary><?php esc_html_e( 'Development mode: OAuth redirect', '4wp-social' ); ?></summary>
 						<p class="forwp-social-muted"><?php esc_html_e( 'Local site: the platform rejects this domain. Use the loopback address (127.0.0.1 + your Local port) instead, like 4WP Drive does. Save it here, then paste the same URI into the console.', '4wp-social' ); ?></p>
-						<?php if ( empty( $forwp_social_guide['loopback_allowed'] ) ) : ?>
+						<?php if ( 'tiktok.com' === $forwp_social_key ) : ?>
 							<p class="forwp-social-callout forwp-social-callout--warn"><?php esc_html_e( 'TikTok may reject a loopback redirect (it requires https and a registered domain) — not verified yet. If the console refuses it, connect TikTok on staging.', '4wp-social' ); ?></p>
 						<?php endif; ?>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="forwp-social-copy">
@@ -160,6 +161,12 @@ $forwp_social_icons   = array(
 						<label class="forwp-social-field__label" for="<?php echo esc_attr( $forwp_social_anchor ); ?>-secret"><?php echo esc_html( $forwp_social_labels['client_secret'] ); ?></label>
 						<input type="password" id="<?php echo esc_attr( $forwp_social_anchor ); ?>-secret" name="client_secret" value="" autocomplete="new-password" placeholder="<?php echo '' !== $forwp_social_creds['client_secret'] ? esc_attr__( '•••••••• saved', '4wp-social' ) : ''; ?>" />
 					</div>
+					<?php if ( ! empty( $forwp_social_labels['config_id'] ) ) : ?>
+						<div class="forwp-social-field">
+							<label class="forwp-social-field__label" for="<?php echo esc_attr( $forwp_social_anchor ); ?>-config"><?php echo esc_html( $forwp_social_labels['config_id'] ); ?></label>
+							<input type="text" id="<?php echo esc_attr( $forwp_social_anchor ); ?>-config" name="config_id" value="<?php echo esc_attr( Credentials_Store::extra( $forwp_social_key, 'config_id' ) ); ?>" autocomplete="off" spellcheck="false" />
+						</div>
+					<?php endif; ?>
 					<?php submit_button( $forwp_social_has_key ? __( 'Update keys', '4wp-social' ) : __( 'Save keys', '4wp-social' ), $forwp_social_has_key ? 'secondary' : 'primary', 'submit', false ); ?>
 				</form>
 			</div>

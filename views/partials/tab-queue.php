@@ -12,6 +12,7 @@
 
 use ForWP\Social\Admin\Admin_Menu;
 use ForWP\Social\Modules\Posting\Job_Repository;
+use ForWP\Social\Modules\Posting\Queue;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -27,6 +28,18 @@ $forwp_social_badges  = array(
 	<h2 class="forwp-social-intro-card__title"><?php esc_html_e( 'Publishing queue', '4wp-social' ); ?></h2>
 	<p class="forwp-social-intro-card__text"><?php esc_html_e( 'The queue runs every minute through WP-Cron, two uploads per run. Failed jobs retry three times with a growing pause; after that use Retry. TikTok jobs stay "processing" until TikTok finishes the upload.', '4wp-social' ); ?></p>
 </div>
+
+<?php if ( ! Queue::auto_publish() ) : ?>
+	<div class="forwp-social-callout forwp-social-callout--warn">
+		<p>
+			<strong><?php esc_html_e( 'Auto-publishing is off on this site.', '4wp-social' ); ?></strong>
+			<?php
+			/* translators: %s: environment type. */
+			echo esc_html( sprintf( __( 'Environment "%s" is not production: jobs wait in the queue. "Run now" uploads one job for real, "Check now" polls a processing one.', '4wp-social' ), wp_get_environment_type() ) );
+			?>
+		</p>
+	</div>
+<?php endif; ?>
 
 <p class="forwp-social-view-switch">
 	<a class="button<?php echo 'list' === $queue_view ? ' button-primary' : ''; ?>" href="<?php echo esc_url( Admin_Menu::tab_url( 'queue' ) ); ?>"><?php esc_html_e( 'List', '4wp-social' ); ?></a>
@@ -83,13 +96,28 @@ $forwp_social_badges  = array(
 				</td>
 				<td><?php echo esc_html( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) strtotime( $forwp_social_job->updated_at . ' UTC' ) ) ); ?></td>
 				<td>
-					<?php if ( Job_Repository::FAILED === $forwp_social_job->status ) : ?>
+					<?php if ( Job_Repository::PROCESSING === $forwp_social_job->status ) : ?>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-							<input type="hidden" name="action" value="<?php echo esc_attr( $forwp_social_actions['retry_job'] ); ?>" />
+							<input type="hidden" name="action" value="<?php echo esc_attr( $forwp_social_actions['run_job'] ); ?>" />
 							<input type="hidden" name="job_id" value="<?php echo esc_attr( (string) $forwp_social_job->id ); ?>" />
-							<?php wp_nonce_field( $forwp_social_actions['retry_job'] . '_' . $forwp_social_job->id ); ?>
-							<button class="button button-small"><?php esc_html_e( 'Retry', '4wp-social' ); ?></button>
+							<?php wp_nonce_field( $forwp_social_actions['run_job'] . '_' . $forwp_social_job->id ); ?>
+							<button class="button button-small"><?php esc_html_e( 'Check now', '4wp-social' ); ?></button>
 						</form>
+					<?php elseif ( Job_Repository::is_actionable( $forwp_social_job ) ) : ?>
+						<div class="forwp-social-row-actions" style="display:flex;gap:4px;flex-wrap:wrap">
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+								<input type="hidden" name="action" value="<?php echo esc_attr( $forwp_social_actions['run_job'] ); ?>" />
+								<input type="hidden" name="job_id" value="<?php echo esc_attr( (string) $forwp_social_job->id ); ?>" />
+								<?php wp_nonce_field( $forwp_social_actions['run_job'] . '_' . $forwp_social_job->id ); ?>
+								<button class="button button-small button-primary"><?php esc_html_e( 'Run now', '4wp-social' ); ?></button>
+							</form>
+							<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+								<input type="hidden" name="action" value="<?php echo esc_attr( $forwp_social_actions['delete_job'] ); ?>" />
+								<input type="hidden" name="job_id" value="<?php echo esc_attr( (string) $forwp_social_job->id ); ?>" />
+								<?php wp_nonce_field( $forwp_social_actions['delete_job'] . '_' . $forwp_social_job->id ); ?>
+								<button class="button button-small button-link-delete"><?php esc_html_e( 'Delete', '4wp-social' ); ?></button>
+							</form>
+						</div>
 					<?php endif; ?>
 				</td>
 			</tr>

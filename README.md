@@ -54,6 +54,19 @@ src/
 | `forwp_social_status_post_types`, `forwp_social_calendar_events`, `forwp_social_calendar_site_post_types` | filter |
 | `forwp_social_package_imported`, `forwp_social_published`, `forwp_social_failed` | action |
 
+## Documentation
+
+| File | Content |
+|---|---|
+| [AGENTS.md](AGENTS.md) | Rules for AI agents and contributors |
+| [CLAUDE.md](CLAUDE.md) | Claude Code entry point (imports AGENTS.md) |
+| [docs/SPEC.md](docs/SPEC.md) | Cross-posting specification |
+| [docs/ABILITIES.md](docs/ABILITIES.md) | MCP abilities |
+| [docs/CONCEPT.md](docs/CONCEPT.md) | Concept |
+| [docs/decisions/](docs/decisions/) | Architecture decision records (ADR) |
+| [docs/plans/](docs/plans/) | Step-by-step work plans |
+| [.githooks/](.githooks/) | PHPCS pre-commit (`git config core.hooksPath .githooks`) |
+
 ## Development
 
 ```

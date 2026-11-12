@@ -1,0 +1,13 @@
+#!/bin/sh
+# PHPCS (WPCS) for staged PHP files. Enable: git config core.hooksPath .githooks
+
+files=$(git diff --cached --name-only --diff-filter=ACM -- '*.php')
+[ -z "$files" ] && exit 0
+
+if [ ! -x vendor/bin/phpcs ]; then
+	echo "pre-commit: vendor/bin/phpcs not found, run composer install." >&2
+	exit 1
+fi
+
+# shellcheck disable=SC2086
+vendor/bin/phpcs -q $files
