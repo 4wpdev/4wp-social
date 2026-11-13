@@ -67,7 +67,7 @@ final class TikTok_OAuth_Provider implements OAuth_Provider_Interface {
 	public function get_auth_url( string $client_id, string $redirect_uri, string $state ): string {
 		$params = array(
 			'client_key'    => $client_id,
-			'scope'         => implode( ',', self::SCOPES ),
+			'scope'         => implode( ',', OAuth_Controller::scopes( self::SLUG, self::SCOPES ) ),
 			'response_type' => 'code',
 			'redirect_uri'  => $redirect_uri,
 			'state'         => $state,

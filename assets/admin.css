@@ -4,6 +4,7 @@
 
 /* Shell */
 .forwp-social-admin-shell { max-width: 1100px; }
+.forwp-social-admin-shell--wide { max-width: none; }
 .forwp-social-admin-shell h1.forwp-social-admin-heading { align-items: center; display: flex; font-size: 1.6rem; font-weight: 600; gap: 10px; margin-bottom: 0.25rem; }
 .forwp-social-admin-heading__icon { color: var(--wp-admin-theme-color, #3858e9); display: inline-flex; line-height: 0; }
 .forwp-social-admin-heading__icon .dashicons { font-size: 28px; height: 28px; width: 28px; }
@@ -320,3 +321,15 @@ details.forwp-social-devmode > summary { margin-bottom: 8px; }
 .forwp-social-chip__panel p { margin: 0 0 8px; }
 .forwp-social-chip__msg { color: #646970; font-size: 12px; word-break: break-word; max-height: 120px; overflow: auto; }
 .forwp-social-chip__panel .forwp-social-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Dashboard and Analytics boxes. */
+.forwp-social-dash,
+.forwp-social-analytics { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin: 16px 0; }
+.forwp-social-dash__box { background: #fff; border: 1px solid #dcdcde; border-radius: 4px; padding: 12px 16px; min-width: 0; }
+.forwp-social-dash__box h2 { display: flex; align-items: center; gap: 8px; font-size: 14px; margin: 0 0 8px; }
+.forwp-social-dash__box ul { margin: 0 0 8px; }
+.forwp-social-json summary { cursor: pointer; margin-top: 8px; }
+.forwp-social-json pre { background: #f6f7f7; border: 1px solid #dcdcde; border-radius: 4px; font-size: 11px; max-height: 360px; overflow: auto; padding: 8px; white-space: pre-wrap; word-break: break-word; }
+.forwp-social-dash__list { list-style: none; margin: 0 0 8px; padding: 0; }
+.forwp-social-dash__list li { align-items: center; display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 6px; }
+.forwp-social-dash__time { color: #646970; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }

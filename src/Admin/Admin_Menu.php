@@ -1,6 +1,6 @@
 <?php
 /**
- * Admin screen: Modules · Accounts · Queue.
+ * Admin screens: Dashboard · Calendar · Analytics · Settings (Platforms · Modules · Accounts · Queue · Documentation).
  *
  * @package ForWP\Social
  */
@@ -11,8 +11,11 @@ use ForWP\Social\Auth\Credentials_Store;
 use ForWP\Social\Auth\OAuth_Controller;
 use ForWP\Social\Core\Module_Registry;
 use ForWP\Social\Core\Settings;
+use ForWP\Social\Modules\Analytics\Analytics;
+use ForWP\Social\Modules\Posting\Adapter_Registry;
 use ForWP\Social\Modules\Posting\Calendar;
 use ForWP\Social\Modules\Posting\Job_Repository;
+use ForWP\Social\Modules\Posting\Platform_Registry;
 use ForWP\Social\Modules\Posting\Queue;
 use ForWP\Social\Rest\Rest_Platforms;
 
@@ -29,12 +32,18 @@ final class Admin_Menu {
 
 	public const CALENDAR_SLUG = 'forwp-social-calendar';
 
+	public const ANALYTICS_SLUG = 'forwp-social-analytics';
+
+	public const SETTINGS_SLUG = 'forwp-social-settings';
+
 	private const SAVE_SETTINGS    = 'forwp_social_save_settings';
 	private const SAVE_CREDENTIALS = 'forwp_social_save_credentials';
 	private const RETRY_JOB        = 'forwp_social_retry_job';
 	private const RUN_JOB          = 'forwp_social_run_job';
 	private const DELETE_JOB       = 'forwp_social_delete_job';
 	private const SAVE_REDIRECT    = 'forwp_social_save_redirect';
+	private const FETCH_ANALYTICS  = 'forwp_social_fetch_analytics';
+	private const IMPORT_ANALYTICS = 'forwp_social_import_analytics';
 
 	/**
 	 * @var self|null
@@ -63,6 +72,56 @@ final class Admin_Menu {
 		add_action( 'admin_post_' . self::RUN_JOB, array( $this, 'handle_run_job' ) );
 		add_action( 'admin_post_' . self::DELETE_JOB, array( $this, 'handle_delete_job' ) );
 		add_action( 'admin_post_' . self::SAVE_REDIRECT, array( $this, 'handle_save_redirect' ) );
+		add_action( 'admin_post_' . self::FETCH_ANALYTICS, array( $this, 'handle_fetch_analytics' ) );
+		add_action( 'admin_post_' . self::IMPORT_ANALYTICS, array( $this, 'handle_import_analytics' ) );
+		add_action( 'admin_init', array( $this, 'redirect_legacy' ) );
+		add_filter( 'parent_file', array( $this, 'highlight_parent' ) );
+		add_filter( 'submenu_file', array( $this, 'highlight_settings' ) );
+	}
+
+	/**
+	 * Old Settings links (page=forwp-social&tab=…) open the Settings page.
+	 *
+	 * @return void
+	 */
+	public function redirect_legacy(): void {
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only redirect.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+		if ( self::MENU_SLUG !== $page || ! isset( $_GET['tab'] ) ) {
+			return;
+		}
+		$args = map_deep( wp_unslash( $_GET ), 'sanitize_text_field' );
+		// phpcs:enable
+		$args['page'] = self::SETTINGS_SLUG;
+
+		wp_safe_redirect( add_query_arg( $args, admin_url( 'admin.php' ) ) );
+		exit;
+	}
+
+	/**
+	 * The hidden Platforms page opens the 4WP Social menu.
+	 *
+	 * @param string $parent_file Current parent file.
+	 * @return string
+	 */
+	public function highlight_parent( $parent_file ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view state.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+
+		return self::PLATFORMS_SLUG === $page ? self::MENU_SLUG : $parent_file;
+	}
+
+	/**
+	 * The hidden Platforms page highlights Settings in the menu.
+	 *
+	 * @param string|null $submenu_file Current submenu file.
+	 * @return string|null
+	 */
+	public function highlight_settings( $submenu_file ) {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view state.
+		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+
+		return self::PLATFORMS_SLUG === $page ? self::SETTINGS_SLUG : $submenu_file;
 	}
 
 	/**
@@ -74,13 +133,95 @@ final class Admin_Menu {
 			__( '4WP Social', '4wp-social' ),
 			'manage_options',
 			self::MENU_SLUG,
-			array( $this, 'render' ),
+			array( $this, 'render_dashboard' ),
 			'dashicons-share',
 			59
 		);
-		add_submenu_page( self::MENU_SLUG, __( 'Settings', '4wp-social' ), __( 'Settings', '4wp-social' ), 'manage_options', self::MENU_SLUG, array( $this, 'render' ) );
-		add_submenu_page( self::MENU_SLUG, __( 'Platforms', '4wp-social' ), __( 'Platforms', '4wp-social' ), 'manage_options', self::PLATFORMS_SLUG, array( $this, 'render_platforms' ) );
+		add_submenu_page( self::MENU_SLUG, __( 'Dashboard', '4wp-social' ), __( 'Dashboard', '4wp-social' ), 'manage_options', self::MENU_SLUG, array( $this, 'render_dashboard' ) );
 		add_submenu_page( self::MENU_SLUG, __( 'Calendar', '4wp-social' ), __( 'Calendar', '4wp-social' ), 'manage_options', self::CALENDAR_SLUG, array( $this, 'render_calendar' ) );
+		add_submenu_page( self::MENU_SLUG, __( 'Analytics', '4wp-social' ), __( 'Analytics', '4wp-social' ), 'manage_options', self::ANALYTICS_SLUG, array( $this, 'render_analytics' ) );
+		add_submenu_page( self::MENU_SLUG, __( 'Settings', '4wp-social' ), __( 'Settings', '4wp-social' ), 'manage_options', self::SETTINGS_SLUG, array( $this, 'render' ) );
+		// Platforms is a Settings tab: a hidden page (parent options.php), reachable by URL but not in the menu.
+		// remove_submenu_page() would deny access: WP then looks for the admin_page_* hook.
+		add_submenu_page( 'options.php', __( 'Platforms', '4wp-social' ), __( 'Platforms', '4wp-social' ), 'manage_options', self::PLATFORMS_SLUG, array( $this, 'render_platforms' ) );
+	}
+
+	/**
+	 * Dashboard: month at a glance, queue problems, accounts, analytics.
+	 *
+	 * @return void
+	 */
+	public function render_dashboard(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$month      = Calendar::month( '' );
+		$events     = Calendar::events( $month );
+		$stats      = Calendar::stats( $events );
+		$scheduled  = Calendar::scheduled( '', 10 );
+		$failed     = array_values(
+			array_filter(
+				( new Job_Repository() )->recent( 0, 200 ),
+				static function ( $job ): bool {
+					return Job_Repository::FAILED === (string) $job->status;
+				}
+			)
+		);
+		$platforms  = Platform_Registry::all( true );
+		$connectors = Adapter_Registry::connectors();
+		$sources    = Analytics::sources();
+		$snapshots  = Analytics::snapshots();
+
+		include FORWP_SOCIAL_PATH . 'views/dashboard-page.php';
+	}
+
+	/**
+	 * Analytics page: one card per source with its last raw snapshot.
+	 *
+	 * @return void
+	 */
+	public function render_analytics(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only view state.
+		$notice = isset( $_GET['forwp_social_notice'] ) ? sanitize_key( wp_unslash( $_GET['forwp_social_notice'] ) ) : '';
+		$error  = isset( $_GET['forwp_social_error'] ) ? sanitize_text_field( wp_unslash( $_GET['forwp_social_error'] ) ) : '';
+		// phpcs:enable
+		$sources   = Analytics::sources();
+		$snapshots = Analytics::snapshots();
+
+		include FORWP_SOCIAL_PATH . 'views/analytics-page.php';
+	}
+
+	/**
+	 * URL of the Analytics page.
+	 *
+	 * @param array<string, string> $args Extra args.
+	 */
+	public static function analytics_url( array $args = array() ): string {
+		return add_query_arg( array_merge( array( 'page' => self::ANALYTICS_SLUG ), $args ), admin_url( 'admin.php' ) );
+	}
+
+	/**
+	 * Fetch one analytics source now.
+	 *
+	 * @return void
+	 */
+	public function handle_fetch_analytics(): void {
+		$source = isset( $_POST['source'] ) ? sanitize_text_field( wp_unslash( $_POST['source'] ) ) : '';
+		check_admin_referer( self::FETCH_ANALYTICS . '_' . $source );
+		$this->require_admin();
+
+		$result = Analytics::refresh( $source );
+		$args   = is_wp_error( $result )
+			? array( 'forwp_social_error' => $result->get_error_message() )
+			: array( 'forwp_social_notice' => 'analytics_fetched' );
+
+		wp_safe_redirect( self::analytics_url( $args ) . '#forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $source ) ) );
+		exit;
 	}
 
 	/**
@@ -195,15 +336,42 @@ final class Admin_Menu {
 	}
 
 	/**
+	 * Import a file into a manual analytics source (LinkedIn).
+	 *
+	 * @return void
+	 */
+	public function handle_import_analytics(): void {
+		$source = isset( $_POST['source'] ) ? sanitize_text_field( wp_unslash( $_POST['source'] ) ) : '';
+		check_admin_referer( self::IMPORT_ANALYTICS . '_' . $source );
+		$this->require_admin();
+
+		// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Upload array; tmp_name is checked with is_uploaded_file().
+		$file = isset( $_FILES['file'] ) && is_array( $_FILES['file'] ) ? $_FILES['file'] : array();
+		$tmp  = (string) ( $file['tmp_name'] ?? '' );
+		$name = sanitize_file_name( (string) ( $file['name'] ?? '' ) );
+
+		$result = '' !== $tmp && is_uploaded_file( $tmp )
+			? Analytics::import( $source, $tmp, $name )
+			: new \WP_Error( 'forwp_social_analytics_file', __( 'Choose a file to upload.', '4wp-social' ) );
+		$args   = is_wp_error( $result )
+			? array( 'forwp_social_error' => $result->get_error_message() )
+			: array( 'forwp_social_notice' => 'analytics_imported' );
+
+		wp_safe_redirect( self::analytics_url( $args ) . '#forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $source ) ) );
+		exit;
+	}
+
+	/**
 	 * Tabs.
 	 *
 	 * @return array<string, string>
 	 */
 	public static function tabs(): array {
 		return array(
+			'queue'         => __( 'Queue', '4wp-social' ),
+			'platforms'     => __( 'Platforms', '4wp-social' ),
 			'modules'       => __( 'Modules', '4wp-social' ),
 			'accounts'      => __( 'Accounts', '4wp-social' ),
-			'queue'         => __( 'Queue', '4wp-social' ),
 			'documentation' => __( 'Documentation', '4wp-social' ),
 		);
 	}
@@ -215,15 +383,17 @@ final class Admin_Menu {
 	 */
 	public static function notices(): array {
 		return array(
-			'saved'        => __( 'Settings saved.', '4wp-social' ),
-			'creds_saved'  => __( 'Credentials saved. Now connect the account (step 3).', '4wp-social' ),
-			'connected'    => __( 'Account connected. Posting to this platform is ready.', '4wp-social' ),
-			'disconnected' => __( 'Account disconnected.', '4wp-social' ),
-			'tested'       => __( 'Connection works: the token was refreshed and the account read.', '4wp-social' ),
-			'retried'      => __( 'Job queued again. The queue runs every minute.', '4wp-social' ),
-			'redirect_saved' => __( 'Redirect URI saved. Put the same URI into the platform console.', '4wp-social' ),
-			'job_run'        => __( 'Job run now. See its status below; processing jobs are checked by the queue every minute.', '4wp-social' ),
-			'job_deleted'    => __( 'Job deleted from the queue.', '4wp-social' ),
+			'saved'              => __( 'Settings saved.', '4wp-social' ),
+			'creds_saved'        => __( 'Credentials saved. Now connect the account (step 3).', '4wp-social' ),
+			'connected'          => __( 'Account connected. Posting to this platform is ready.', '4wp-social' ),
+			'disconnected'       => __( 'Account disconnected.', '4wp-social' ),
+			'tested'             => __( 'Connection works: the token was refreshed and the account read.', '4wp-social' ),
+			'retried'            => __( 'Job queued again. The queue runs every minute.', '4wp-social' ),
+			'redirect_saved'     => __( 'Redirect URI saved. Put the same URI into the platform console.', '4wp-social' ),
+			'job_run'            => __( 'Job run now. See its status below; processing jobs are checked by the queue every minute.', '4wp-social' ),
+			'job_deleted'        => __( 'Job deleted from the queue.', '4wp-social' ),
+			'analytics_fetched'  => __( 'Analytics fetched. Parts the platform refused show their error.', '4wp-social' ),
+			'analytics_imported' => __( 'File imported.', '4wp-social' ),
 		);
 	}
 
@@ -236,13 +406,13 @@ final class Admin_Menu {
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only view state.
-		$tab    = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'modules';
+		$tab    = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'queue';
 		$notice = isset( $_GET['forwp_social_notice'] ) ? sanitize_key( wp_unslash( $_GET['forwp_social_notice'] ) ) : '';
 		$error  = isset( $_GET['forwp_social_error'] ) ? sanitize_text_field( wp_unslash( $_GET['forwp_social_error'] ) ) : '';
 		// Result of an action on one platform: shown inside that platform's box instead of on top.
 		$notice_platform = isset( $_GET['forwp_social_platform'] ) ? sanitize_text_field( wp_unslash( $_GET['forwp_social_platform'] ) ) : '';
 		// phpcs:enable
-		$tab = array_key_exists( $tab, self::tabs() ) ? $tab : 'modules';
+		$tab = array_key_exists( $tab, self::tabs() ) && 'platforms' !== $tab ? $tab : 'queue';
 
 		$settings  = Settings::all();
 		$modules   = Module_Registry::all();
@@ -265,10 +435,14 @@ final class Admin_Menu {
 	 * @param array<string, string> $args Extra args.
 	 */
 	public static function tab_url( string $tab, array $args = array() ): string {
+		if ( 'platforms' === $tab ) {
+			return add_query_arg( array_merge( array( 'page' => self::PLATFORMS_SLUG ), $args ), admin_url( 'admin.php' ) );
+		}
+
 		return add_query_arg(
 			array_merge(
 				array(
-					'page' => self::MENU_SLUG,
+					'page' => self::SETTINGS_SLUG,
 					'tab'  => $tab,
 				),
 				$args
@@ -438,6 +612,8 @@ final class Admin_Menu {
 			'run_job'          => self::RUN_JOB,
 			'delete_job'       => self::DELETE_JOB,
 			'save_redirect'    => self::SAVE_REDIRECT,
+			'fetch_analytics'  => self::FETCH_ANALYTICS,
+			'import_analytics' => self::IMPORT_ANALYTICS,
 		);
 	}
 

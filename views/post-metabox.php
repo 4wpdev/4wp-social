@@ -42,7 +42,7 @@ $forwp_social_files = array(
 					<?php elseif ( $forwp_social_job ) : ?>
 						<?php echo esc_html( $forwp_social_job->status ); ?>
 					<?php elseif ( ! $forwp_social_ready ) : ?>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=forwp-social&tab=accounts' ) ); ?>"><?php esc_html_e( 'connect', '4wp-social' ); ?></a>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=forwp-social-settings&tab=accounts' ) ); ?>"><?php esc_html_e( 'connect', '4wp-social' ); ?></a>
 					<?php endif; ?>
 				</span>
 				<?php if ( $forwp_social_done || ( 'youtube.com' === $forwp_social_key && $forwp_social_ready ) ) : ?>

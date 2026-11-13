@@ -513,6 +513,24 @@ final class OAuth_Controller {
 	}
 
 	/**
+	 * Scopes a provider requests. TikTok analytics scopes (user.info.stats, video.list)
+	 * are added here only after the TikTok app has them approved, or the login fails.
+	 *
+	 * @param string        $platform Platform key.
+	 * @param array<string> $scopes   Default scopes.
+	 * @return array<string>
+	 */
+	public static function scopes( string $platform, array $scopes ): array {
+		/**
+		 * OAuth scopes requested for a platform.
+		 *
+		 * @param string[] $scopes   Scopes.
+		 * @param string   $platform Platform key.
+		 */
+		return array_values( array_unique( array_map( 'strval', (array) apply_filters( 'forwp_social_oauth_scopes', $scopes, $platform ) ) ) );
+	}
+
+	/**
 	 * Admin URL of the Accounts tab.
 	 *
 	 * @param array<string, string> $args     Extra query args.
@@ -525,7 +543,7 @@ final class OAuth_Controller {
 		$url = add_query_arg(
 			array_merge(
 				array(
-					'page' => 'forwp-social',
+					'page' => 'forwp-social-settings',
 					'tab'  => 'accounts',
 				),
 				$args

@@ -26,6 +26,7 @@ final class Google_OAuth_Provider implements OAuth_Provider_Interface, Revocable
 	private const SCOPES = array(
 		'https://www.googleapis.com/auth/youtube.upload',
 		'https://www.googleapis.com/auth/youtube.force-ssl',
+		'https://www.googleapis.com/auth/yt-analytics.readonly',
 	);
 
 	public function get_slug(): string {
@@ -52,9 +53,10 @@ final class Google_OAuth_Provider implements OAuth_Provider_Interface, Revocable
 			'steps'                 => array(
 				__( '<strong>Check the project.</strong> In the top bar of Google Cloud Console the project selector must show your project (the one where you enabled the API).', '4wp-social' ),
 				__( '<strong>Turn on the API.</strong> Open <a href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener noreferrer">YouTube Data API v3</a> → press <strong>Enable</strong>. If you see <strong>API Enabled</strong> and a <strong>Manage</strong> button, it is already done.', '4wp-social' ),
+				__( '<strong>Turn on analytics.</strong> Open <a href="https://console.cloud.google.com/apis/library/youtubeanalytics.googleapis.com" target="_blank" rel="noopener noreferrer">YouTube Analytics API</a> → <strong>Enable</strong>. Used by the Analytics page.', '4wp-social' ),
 				__( '<strong>Describe the app.</strong> Open <a href="https://console.cloud.google.com/auth/overview" target="_blank" rel="noopener noreferrer">Google Auth Platform</a> → <strong>Get started</strong>. App name: your site name. User support email: your email → Next. Audience: <strong>External</strong> → Next. Contact information: your email → Next. Agree → <strong>Create</strong>. (Already configured? Skip this step.)', '4wp-social' ),
 				__( '<strong>Add yourself as a tester.</strong> Open <a href="https://console.cloud.google.com/auth/audience" target="_blank" rel="noopener noreferrer">Audience</a> → <strong>Test users</strong> → <strong>Add users</strong> → the Google account that owns the YouTube channel → <strong>Save</strong>.', '4wp-social' ),
-				__( '<strong>Allow uploads.</strong> Open <a href="https://console.cloud.google.com/auth/scopes" target="_blank" rel="noopener noreferrer">Data Access</a> → <strong>Add or remove scopes</strong> → in the filter type <code>youtube.upload</code> and tick it, then <code>youtube.force-ssl</code> and tick it → <strong>Update</strong> → <strong>Save</strong> at the bottom of the page.', '4wp-social' ),
+				__( '<strong>Allow uploads.</strong> Open <a href="https://console.cloud.google.com/auth/scopes" target="_blank" rel="noopener noreferrer">Data Access</a> → <strong>Add or remove scopes</strong> → in the filter type <code>youtube.upload</code> and tick it, then <code>youtube.force-ssl</code>, then <code>yt-analytics.readonly</code> and tick them → <strong>Update</strong> → <strong>Save</strong> at the bottom of the page.', '4wp-social' ),
 				__( '<strong>Local site only:</strong> in the <strong>Development mode</strong> box above press <strong>Use loopback redirect</strong>. The Redirect URI at the top changes to <code>http://127.0.0.1:…</code>.', '4wp-social' ),
 				__( '<strong>Create the keys.</strong> Open <a href="https://console.cloud.google.com/auth/clients/create" target="_blank" rel="noopener noreferrer">Create OAuth client</a> → Application type: <strong>Web application</strong> → Name: anything (e.g. 4WP Social) → <strong>Authorized redirect URIs</strong> → <strong>Add URI</strong> → paste the Redirect URI from the top of this box (press Copy) → <strong>Create</strong>.', '4wp-social' ),
 				__( '<strong>Copy the keys.</strong> The dialog shows <strong>Client ID</strong> and <strong>Client secret</strong>. Paste both into step 2 below right away — Google shows the secret only once (or press Download JSON to keep a copy).', '4wp-social' ),
@@ -75,7 +77,7 @@ final class Google_OAuth_Provider implements OAuth_Provider_Interface, Revocable
 			'client_id'              => $client_id,
 			'redirect_uri'           => $redirect_uri,
 			'response_type'          => 'code',
-			'scope'                  => implode( ' ', self::SCOPES ),
+			'scope'                  => implode( ' ', OAuth_Controller::scopes( self::SLUG, self::SCOPES ) ),
 			'access_type'            => 'offline',
 			'prompt'                 => 'consent',
 			'include_granted_scopes' => 'true',

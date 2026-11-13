@@ -111,7 +111,7 @@ final class Rest_Platforms {
 				array_values( Platform_Registry::all( false ) )
 			),
 			'connectors'   => $connectors,
-			'accounts_url' => admin_url( 'admin.php?page=forwp-social&tab=accounts' ),
+			'accounts_url' => admin_url( 'admin.php?page=forwp-social-settings&tab=accounts' ),
 		);
 	}
 

@@ -44,11 +44,7 @@ $forwp_social_leads   = array(
 		<div class="notice notice-error is-dismissible"><p><strong><?php esc_html_e( 'Connection failed:', '4wp-social' ); ?></strong> <?php echo esc_html( $error ); ?></p></div>
 	<?php endif; ?>
 
-	<nav class="nav-tab-wrapper forwp-social-tabs" aria-label="<?php esc_attr_e( '4WP Social sections', '4wp-social' ); ?>">
-		<?php foreach ( Admin_Menu::tabs() as $forwp_social_slug => $forwp_social_label ) : ?>
-			<a href="<?php echo esc_url( Admin_Menu::tab_url( $forwp_social_slug ) ); ?>" class="nav-tab<?php echo $tab === $forwp_social_slug ? ' nav-tab-active' : ''; ?>"><?php echo esc_html( $forwp_social_label ); ?></a>
-		<?php endforeach; ?>
-	</nav>
+	<?php require FORWP_SOCIAL_PATH . 'views/partials/settings-nav.php'; ?>
 
 	<div class="forwp-social-admin-app">
 		<?php require FORWP_SOCIAL_PATH . 'views/partials/tab-' . $tab . '.php'; ?>

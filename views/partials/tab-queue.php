@@ -187,11 +187,8 @@ $forwp_social_badges  = array(
 					<?php endforeach; ?>
 					</div>
 				</td>
-				<td class="forwp-social-queue__time" title="<?php echo esc_attr( wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $forwp_social_row['updated'] ) ); ?>">
-					<?php
-					/* translators: %s: human time difference. */
-					echo esc_html( sprintf( __( '%s ago', '4wp-social' ), human_time_diff( $forwp_social_row['updated'] ) ) );
-					?>
+				<td class="forwp-social-queue__time">
+					<?php echo esc_html( (string) wp_date( 'Y-m-d H:i', $forwp_social_row['updated'] ) ); ?>
 				</td>
 			</tr>
 		<?php endforeach; ?>

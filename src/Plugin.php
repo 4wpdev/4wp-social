@@ -14,6 +14,7 @@ use ForWP\Social\Auth\OAuth_Controller;
 use ForWP\Social\Core\Module_Registry;
 use ForWP\Social\Database\Schema;
 use ForWP\Social\Modules\Posting\Queue;
+use ForWP\Social\Rest\Rest_Analytics;
 use ForWP\Social\Rest\Rest_Jobs;
 use ForWP\Social\Rest\Rest_Link;
 use ForWP\Social\Rest\Rest_Oauth;
@@ -63,6 +64,7 @@ final class Plugin {
 		Rest_Oauth::register();
 		Rest_Jobs::register();
 		Rest_Link::register();
+		Rest_Analytics::register();
 
 		// Modules register on init so third-party plugins can add theirs via forwp_social_modules.
 		add_action( 'init', array( Module_Registry::class, 'boot_enabled' ), 5 );

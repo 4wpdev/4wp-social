@@ -37,7 +37,7 @@ defined( 'ABSPATH' ) || exit;
 					<?php elseif ( $forwp_social_job ) : ?>
 						<?php echo esc_html( $forwp_social_job->status ); ?>
 					<?php elseif ( ! $forwp_social_ready ) : ?>
-						<a href="<?php echo esc_url( admin_url( 'admin.php?page=forwp-social&tab=accounts' ) ); ?>"><?php esc_html_e( 'connect', '4wp-social' ); ?></a>
+						<a href="<?php echo esc_url( admin_url( 'admin.php?page=forwp-social-settings&tab=accounts' ) ); ?>"><?php esc_html_e( 'connect', '4wp-social' ); ?></a>
 					<?php elseif ( ! $forwp_social_declared ) : ?>
 						<?php esc_html_e( 'not in meta.json', '4wp-social' ); ?>
 					<?php endif; ?>
