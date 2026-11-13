@@ -167,6 +167,20 @@ $forwp_social_icons   = array(
 							<input type="text" id="<?php echo esc_attr( $forwp_social_anchor ); ?>-config" name="config_id" value="<?php echo esc_attr( Credentials_Store::extra( $forwp_social_key, 'config_id' ) ); ?>" autocomplete="off" spellcheck="false" />
 						</div>
 					<?php endif; ?>
+					<?php foreach ( (array) ( $forwp_social_labels['extra_fields'] ?? array() ) as $forwp_social_field => $forwp_social_spec ) : ?>
+						<?php $forwp_social_value = Credentials_Store::extra( $forwp_social_key, (string) $forwp_social_field ); ?>
+						<div class="forwp-social-field">
+							<?php if ( 'checkbox' === ( $forwp_social_spec['type'] ?? 'text' ) ) : ?>
+								<label><input type="checkbox" name="extra[<?php echo esc_attr( $forwp_social_field ); ?>]" value="1" <?php checked( '1', $forwp_social_value ); ?> /> <?php echo esc_html( (string) $forwp_social_spec['label'] ); ?></label>
+							<?php else : ?>
+								<label class="forwp-social-field__label" for="<?php echo esc_attr( $forwp_social_anchor . '-' . $forwp_social_field ); ?>"><?php echo esc_html( (string) $forwp_social_spec['label'] ); ?></label>
+								<input type="text" id="<?php echo esc_attr( $forwp_social_anchor . '-' . $forwp_social_field ); ?>" name="extra[<?php echo esc_attr( $forwp_social_field ); ?>]" value="<?php echo esc_attr( $forwp_social_value ); ?>" autocomplete="off" spellcheck="false" />
+							<?php endif; ?>
+							<?php if ( ! empty( $forwp_social_spec['help'] ) ) : ?>
+								<p class="forwp-social-field__help"><?php echo esc_html( (string) $forwp_social_spec['help'] ); ?></p>
+							<?php endif; ?>
+						</div>
+					<?php endforeach; ?>
 					<?php submit_button( $forwp_social_has_key ? __( 'Update keys', '4wp-social' ) : __( 'Save keys', '4wp-social' ), $forwp_social_has_key ? 'secondary' : 'primary', 'submit', false ); ?>
 				</form>
 			</div>

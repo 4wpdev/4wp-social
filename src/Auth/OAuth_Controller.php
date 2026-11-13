@@ -70,6 +70,7 @@ final class OAuth_Controller {
 			Google_OAuth_Provider::SLUG => new Google_OAuth_Provider(),
 			TikTok_OAuth_Provider::SLUG => new TikTok_OAuth_Provider(),
 			Meta_OAuth_Provider::SLUG   => new Meta_OAuth_Provider(),
+			Pinterest_OAuth_Provider::SLUG => new Pinterest_OAuth_Provider(),
 		);
 
 		/**

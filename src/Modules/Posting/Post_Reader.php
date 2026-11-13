@@ -106,7 +106,8 @@ final class Post_Reader implements Media_Source_Interface {
 
 		if ( $with_media ) {
 			$video = $opt['video_id'] ? (string) get_attached_file( (int) $opt['video_id'] ) : '';
-			if ( '' === $video || ! is_readable( $video ) ) {
+			$image = Adapter_Registry::accepts_image( $platform ) && $cover_id;
+			if ( ( '' === $video || ! is_readable( $video ) ) && ! $image ) {
 				return new WP_Error( 'forwp_social_no_video', __( 'Choose a video from the Media Library first.', '4wp-social' ) );
 			}
 

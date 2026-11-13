@@ -157,7 +157,13 @@ final class Package_Reader implements Media_Source_Interface {
 					$data[ $key . '_path' ] = (string) get_attached_file( $id );
 				}
 			}
-			if ( ! $is_article && ( empty( $data['video_path'] ) || ! is_readable( $data['video_path'] ) ) ) {
+			$has_video = ! empty( $data['video_path'] ) && is_readable( $data['video_path'] );
+			if ( Adapter_Registry::accepts_image( $platform ) && empty( $data['cover_path'] ) ) {
+				// Image pins: the package cover, else the post featured image.
+				$thumb              = (int) get_post_thumbnail_id( $post_id );
+				$data['cover_path'] = $thumb ? (string) get_attached_file( $thumb ) : '';
+			}
+			if ( ! $is_article && ! $has_video && ! ( Adapter_Registry::accepts_image( $platform ) && ! empty( $data['cover_path'] ) ) ) {
 				return new WP_Error( 'forwp_social_no_video', __( 'The platform video was not imported into the Media Library.', '4wp-social' ) );
 			}
 		}

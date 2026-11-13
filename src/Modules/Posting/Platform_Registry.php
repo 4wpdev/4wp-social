@@ -37,6 +37,7 @@ final class Platform_Registry {
 			array( 'reddit.com', 'Reddit', '', 'https://www.reddit.com/submit', false ),
 			array( 'facebook.com', 'Facebook', 'facebook.com', 'https://www.facebook.com/', false ),
 			array( 'instagram.com', 'Instagram', 'instagram.com', 'https://www.instagram.com/', false ),
+			array( 'pinterest.com', 'Pinterest', 'pinterest.com', 'https://www.pinterest.com/pin-creation-tool/', true ),
 		);
 
 		$out = array();
@@ -58,6 +59,36 @@ final class Platform_Registry {
 	}
 
 	/**
+	 * Platforms added after a site saved its list (shown once, disabled; the user can delete them).
+	 */
+	private const ADDED = array( 'pinterest.com' );
+
+	/**
+	 * Add new default platforms to a saved list, once per key.
+	 *
+	 * @param array<string, array<string, mixed>> $rows Saved rows.
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function with_added( array $rows ): array {
+		$seen = (array) get_option( self::OPTION . '_added', array() );
+		$new  = array_diff( self::ADDED, $seen );
+		if ( ! $new ) {
+			return $rows;
+		}
+		$defaults = self::defaults();
+		$order    = array_map( static fn( array $row ): int => (int) ( $row['order'] ?? 0 ), $rows );
+		foreach ( $new as $key ) {
+			if ( ! isset( $rows[ $key ] ) && isset( $defaults[ $key ] ) ) {
+				$rows[ $key ] = array_merge( $defaults[ $key ], array( 'order' => $order ? max( $order ) + 1 : 0 ) );
+			}
+		}
+		update_option( self::OPTION, $rows );
+		update_option( self::OPTION . '_added', array_values( array_unique( array_merge( $seen, $new ) ) ), false );
+
+		return $rows;
+	}
+
+	/**
 	 * Platforms in order.
 	 *
 	 * @param bool $enabled_only Skip switched-off platforms.
@@ -65,7 +96,7 @@ final class Platform_Registry {
 	 */
 	public static function all( bool $enabled_only = true ): array {
 		$stored = get_option( self::OPTION, null );
-		$rows   = is_array( $stored ) ? $stored : self::defaults();
+		$rows   = is_array( $stored ) ? self::with_added( $stored ) : self::defaults();
 
 		uasort(
 			$rows,
@@ -255,6 +286,8 @@ final class Platform_Registry {
 	 */
 	public static function save( array $input ): void {
 		update_option( self::OPTION, self::sanitize_rows( $input ), false );
+		// A list saved by the user is the whole list: new defaults are not added to it.
+		update_option( self::OPTION . '_added', self::ADDED, false );
 	}
 
 	/**

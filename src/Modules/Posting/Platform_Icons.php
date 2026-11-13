@@ -35,6 +35,7 @@ final class Platform_Icons {
 	private const COLORS = array(
 		'tiktok.com' => '#000000',
 		'bsky.app'   => '#0085ff',
+		'pinterest.com' => '#e60023',
 	);
 
 	/**

@@ -8,11 +8,13 @@
 namespace ForWP\Social\Modules\Posting;
 
 use ForWP\Social\Contracts\Article_Adapter_Interface;
+use ForWP\Social\Contracts\Image_Capable_Interface;
 use ForWP\Social\Contracts\Platform_Adapter_Interface;
 use ForWP\Social\Modules\Posting\Adapters\Bluesky_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\DevTo_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\Facebook_Reels_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\Instagram_Reels_Adapter;
+use ForWP\Social\Modules\Posting\Adapters\Pinterest_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\TikTok_Adapter;
 use ForWP\Social\Modules\Posting\Adapters\YouTube_Adapter;
 
@@ -62,6 +64,7 @@ final class Adapter_Registry {
 			DevTo_Adapter::SLUG           => new DevTo_Adapter(),
 			Facebook_Reels_Adapter::SLUG  => new Facebook_Reels_Adapter(),
 			Instagram_Reels_Adapter::SLUG => new Instagram_Reels_Adapter(),
+			Pinterest_Adapter::SLUG       => new Pinterest_Adapter(),
 		);
 
 		/**
@@ -94,6 +97,15 @@ final class Adapter_Registry {
 	 */
 	public static function is_article( string $slug ): bool {
 		return self::get( $slug ) instanceof Article_Adapter_Interface;
+	}
+
+	/**
+	 * Whether the platform can publish an image when the package has no video (Pinterest).
+	 *
+	 * @param string $slug Platform key.
+	 */
+	public static function accepts_image( string $slug ): bool {
+		return self::get( $slug ) instanceof Image_Capable_Interface;
 	}
 
 	/**

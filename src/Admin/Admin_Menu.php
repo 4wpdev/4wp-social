@@ -475,12 +475,23 @@ final class Admin_Menu {
 		check_admin_referer( self::SAVE_CREDENTIALS . '_' . $platform );
 		$this->require_admin();
 
-		if ( OAuth_Controller::instance()->provider( $platform ) ) {
+		$provider = OAuth_Controller::instance()->provider( $platform );
+		if ( $provider ) {
+			$extra  = isset( $_POST['config_id'] ) ? array( 'config_id' => sanitize_text_field( wp_unslash( $_POST['config_id'] ) ) ) : null;
+			$fields = (array) ( $provider->get_credential_labels()['extra_fields'] ?? array() );
+			if ( $fields ) {
+				// Declared extra fields (Pinterest board, sandbox); an unchecked checkbox saves ''.
+				$posted = isset( $_POST['extra'] ) && is_array( $_POST['extra'] ) ? map_deep( wp_unslash( $_POST['extra'] ), 'sanitize_text_field' ) : array();
+				$extra  = array();
+				foreach ( array_keys( $fields ) as $field ) {
+					$extra[ (string) $field ] = (string) ( $posted[ $field ] ?? '' );
+				}
+			}
 			Credentials_Store::save(
 				$platform,
 				isset( $_POST['client_id'] ) ? sanitize_text_field( wp_unslash( $_POST['client_id'] ) ) : '',
 				isset( $_POST['client_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['client_secret'] ) ) : '',
-				isset( $_POST['config_id'] ) ? array( 'config_id' => sanitize_text_field( wp_unslash( $_POST['config_id'] ) ) ) : null
+				$extra
 			);
 		}
 
