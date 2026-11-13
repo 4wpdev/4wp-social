@@ -23,6 +23,10 @@
 Перевірка: лише читання/вичитка, `composer lint` не потрібен.
 
 ## Етап B. 0.5.5 — Аналітика (каркас)
+**Статус: код виконано, реліз — 0.5.6 (тег `v0.5.6`), 0.5.7 — виправлення номера версії й changelog.** Тег `v0.5.5` вийшов без аналітики.
+Відхилення від плану: замість `Source_Registry`/`Snapshot_Store` — один клас `Analytics` (опція `forwp_social_analytics_snapshots`); `status()` замість `ready()`/`missing_scopes()`; ручний імпорт CSV (`Analytics_Import_Interface`, `Manual_Source`, LinkedIn як різновид). Аналітичні scopes TikTok за замовчуванням не запитуються (фільтр `forwp_social_oauth_scopes`).
+Перевірки: YouTube — працює (локально); TikTok — на проді; Facebook, Instagram, LinkedIn CSV — не перевірено. Не зроблено: ADR 0005/0006, `SPEC.md`, README.
+
 Документи першими:
 - `docs/decisions/0005-admin-structure.md` — меню Dashboard · Calendar · Analytics · Settings; Platforms переходить у Settings (старий slug `forwp-social-platforms` → redirect).
 - `docs/decisions/0006-analytics-module.md` — модуль Analytics: джерела, scopes, зберігання сирого JSON, оновлення лише кнопкою (як черга поза продом).

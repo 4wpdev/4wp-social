@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.5.3
+Stable tag: 0.5.7
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -54,6 +54,23 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.5.7 =
+* Version number fixed: the plugin header and Stable tag now match the release tag.
+
+= 0.5.5 – 0.5.6 =
+* New admin structure: Dashboard · Calendar · Analytics · Settings. Platforms moved under Settings; old links redirect.
+* Dashboard: month tiles, scheduled posts, failed jobs, active platforms (manual / API / API not connected), analytics status. Full page width.
+* Analytics (skeleton): YouTube (YouTube Analytics API, last 28 days), TikTok, Facebook and Instagram (Meta Graph insights). Data is fetched only with the "Fetch now" button and shown as raw JSON. Google Analytics is planned.
+* Manual import: upload a CSV export for platforms without an API (LinkedIn first). Other platforms can be added with the `forwp_social_analytics_sources` filter.
+* REST `forwp-social/v1/analytics` and `analytics/refresh`. Filter `forwp_social_oauth_scopes` for extra OAuth scopes.
+* YouTube asks for the `yt-analytics.readonly` scope; reconnect Google to grant it.
+* Queue: first and default tab, status chips, update time with date.
+
+= 0.5.4 =
+* Facebook Reels and Instagram Reels via Meta (Graph API).
+* Queue: "Run now" and "Delete" for jobs.
+* No automatic publishing outside the production environment.
 
 = 0.5.3 =
 * The 4WP Social Media box shows on pages and on any post type that has a meta.json package, not only on videos.
