@@ -45,10 +45,15 @@ $forwp_social_files = array(
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=forwp-social&tab=accounts' ) ); ?>"><?php esc_html_e( 'connect', '4wp-social' ); ?></a>
 					<?php endif; ?>
 				</span>
-				<?php if ( 'youtube.com' === $forwp_social_key && $forwp_social_ready ) : ?>
+				<?php if ( $forwp_social_done || ( 'youtube.com' === $forwp_social_key && $forwp_social_ready ) ) : ?>
 					<div class="forwp-social-link" data-platform="<?php echo esc_attr( $forwp_social_key ); ?>">
 						<?php if ( $forwp_social_done ) : ?>
-							<code><?php echo esc_html( (string) $forwp_social_done['id'] ); ?></code>
+							<?php
+							// Bluesky ids are at:// URIs: the last segment (rkey) is enough to recognise the post.
+							$forwp_social_rid = (string) $forwp_social_done['id'];
+							$forwp_social_rid = 0 === strpos( $forwp_social_rid, 'at://' ) ? substr( $forwp_social_rid, (int) strrpos( $forwp_social_rid, '/' ) + 1 ) : $forwp_social_rid;
+							?>
+							<code title="<?php echo esc_attr( (string) $forwp_social_done['id'] ); ?>"><?php echo esc_html( $forwp_social_rid ); ?></code>
 							<button type="button" class="button-link forwp-social-unlink"><?php esc_html_e( 'Unlink', '4wp-social' ); ?></button>
 						<?php else : ?>
 							<details>

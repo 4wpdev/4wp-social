@@ -83,4 +83,14 @@
 			card.click();
 		}
 	} );
+
+	// Queue chips: one panel open at a time; click outside closes it.
+	document.addEventListener( 'click', function ( e ) {
+		var current = e.target.closest ? e.target.closest( '.forwp-social-chip' ) : null;
+		document.querySelectorAll( '.forwp-social-chip[open]' ).forEach( function ( chip ) {
+			if ( chip !== current ) {
+				chip.removeAttribute( 'open' );
+			}
+		} );
+	} );
 } )();

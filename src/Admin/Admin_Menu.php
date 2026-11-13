@@ -248,7 +248,7 @@ final class Admin_Menu {
 		$modules   = Module_Registry::all();
 		$oauth     = OAuth_Controller::instance();
 		$providers = $oauth->providers();
-		$jobs      = 'queue' === $tab ? ( new Job_Repository() )->recent( 0, 100 ) : array();
+		$jobs      = 'queue' === $tab ? ( new Job_Repository() )->recent( 0, 400 ) : array();
 		// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only view state.
 		$queue_view = isset( $_GET['view'] ) && 'month' === $_GET['view'] ? 'month' : 'list';
 		$month      = Calendar::month( isset( $_GET['month'] ) ? sanitize_text_field( wp_unslash( $_GET['month'] ) ) : '' );
@@ -356,8 +356,20 @@ final class Admin_Menu {
 			);
 		}
 
-		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'retried' ) ) );
+		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'retried' ) + self::queue_filter_arg() ) );
 		exit;
+	}
+
+	/**
+	 * Keep the queue filter after an action.
+	 *
+	 * @return array<string, string>
+	 */
+	private static function queue_filter_arg(): array {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce checked by the caller.
+		$filter = isset( $_POST['forwp_social_filter'] ) ? sanitize_key( wp_unslash( $_POST['forwp_social_filter'] ) ) : '';
+
+		return '' !== $filter ? array( 'filter' => $filter ) : array();
 	}
 
 	/**
@@ -389,7 +401,7 @@ final class Admin_Menu {
 			Queue::run( $id );
 		}
 
-		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_run' ) ) );
+		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_run' ) + self::queue_filter_arg() ) );
 		exit;
 	}
 
@@ -409,7 +421,7 @@ final class Admin_Menu {
 			$repo->delete( $id );
 		}
 
-		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_deleted' ) ) );
+		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_deleted' ) + self::queue_filter_arg() ) );
 		exit;
 	}
 

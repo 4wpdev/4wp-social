@@ -83,7 +83,7 @@
 		e.preventDefault();
 		var $wrap = $( this ).closest( '.forwp-social-link' );
 		wp.apiFetch( {
-			path: '/forwp-social/v1/link?post_id=' + postId( $wrap ),
+			path: '/forwp-social/v1/link?post_id=' + postId( $wrap ) + '&platform=' + encodeURIComponent( String( $wrap.data( 'platform' ) ) ),
 			method: 'DELETE',
 		} ).then( function () {
 			$wrap.text( i18n.unlinked );

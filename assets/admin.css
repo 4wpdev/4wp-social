@@ -123,7 +123,7 @@
 .forwp-social-platforms li > label input { margin: 0; }
 .forwp-social-platforms li > .forwp-social-status { flex: 0 0 auto; }
 .forwp-social-platforms li > .forwp-social-link { flex: 1 0 100%; margin: 0 0 4px 22px; }
-.forwp-social-link code { font-size: 11px; margin-right: 6px; }
+.forwp-social-link code { font-size: 11px; margin-right: 6px; word-break: break-all; }
 .forwp-social-manual[hidden] { display: none; }
 .forwp-social-source label { display: inline-flex; align-items: center; gap: 6px; }
 .forwp-social-publish.is-done:disabled { background: #edfaef !important; border-color: #00a32a !important; color: #1e4620 !important; }
@@ -298,3 +298,25 @@ details.forwp-social-devmode > summary { margin-bottom: 8px; }
 .forwp-social-month__cell.is-adjacent { background: #f6f7f7; }
 .forwp-social-month__cell.is-adjacent > * { opacity: 0.55; }
 .forwp-social-month__cell.is-adjacent:hover > * { opacity: 0.85; }
+
+/* Queue: one row per post, platform chips. */
+.forwp-social-queue-filters { float: none; margin: 0 0 8px; }
+.forwp-social-queue { table-layout: fixed; }
+.forwp-social-queue__post { width: 45%; }
+.forwp-social-queue td.forwp-social-queue__post a { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.forwp-social-queue__time { width: 120px; white-space: nowrap; color: #646970; }
+.forwp-social-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.forwp-social-chip { position: relative; }
+.forwp-social-chip summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; padding: 4px 7px; border-radius: 999px; border: 1px solid #dcdcde; background: #fff; position: relative; }
+.forwp-social-chip summary::-webkit-details-marker { display: none; }
+.forwp-social-chip__dot { width: 8px; height: 8px; border-radius: 50%; background: #a7aaad; }
+.forwp-social-chip--published .forwp-social-chip__dot { background: #1e8a3e; }
+.forwp-social-chip--queued .forwp-social-chip__dot { background: #dba617; }
+.forwp-social-chip--processing .forwp-social-chip__dot { background: #2271b1; }
+.forwp-social-chip--failed .forwp-social-chip__dot { background: #d63638; }
+.forwp-social-chip--failed summary { border-color: #f0b8b9; background: #fcf0f1; }
+.forwp-social-chip__alert { position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; border-radius: 50%; background: #d63638; color: #fff; font-size: 10px; font-weight: 700; line-height: 14px; text-align: center; }
+.forwp-social-chip__panel { position: absolute; z-index: 20; top: calc(100% + 4px); left: 0; width: 300px; padding: 10px 12px; background: #fff; border: 1px solid #dcdcde; border-radius: 6px; box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.forwp-social-chip__panel p { margin: 0 0 8px; }
+.forwp-social-chip__msg { color: #646970; font-size: 12px; word-break: break-word; max-height: 120px; overflow: auto; }
+.forwp-social-chip__panel .forwp-social-row-actions { display: flex; gap: 6px; flex-wrap: wrap; }

@@ -9,6 +9,7 @@ namespace ForWP\Social\Rest;
 
 use ForWP\Social\Api\YouTube_Client;
 use ForWP\Social\Auth\OAuth_Controller;
+use ForWP\Social\Modules\Posting\Adapter_Registry;
 use ForWP\Social\Modules\Posting\Remote_Link;
 use WP_Error;
 use WP_REST_Request;
@@ -75,7 +76,12 @@ final class Rest_Link {
 					'methods'             => 'DELETE',
 					'callback'            => array( self::class, 'unlink' ),
 					'permission_callback' => array( Rest_Jobs::class, 'can_publish' ),
-					'args'                => $post_arg,
+					'args'                => $post_arg + array(
+						'platform' => array(
+							'type'    => 'string',
+							'default' => self::PLATFORM,
+						),
+					),
 				),
 			)
 		);
@@ -131,10 +137,17 @@ final class Rest_Link {
 	}
 
 	/**
+	 * Forget the remote copy on any platform (YouTube when none is given).
+	 *
 	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
 	 */
-	public static function unlink( WP_REST_Request $request ): WP_REST_Response {
-		Remote_Link::unlink( (int) $request['post_id'], self::PLATFORM );
+	public static function unlink( WP_REST_Request $request ) {
+		$platform = (string) $request['platform'];
+		if ( ! array_key_exists( $platform, Adapter_Registry::all() ) ) {
+			return new WP_Error( 'forwp_social_bad_platform', __( 'Unknown platform.', '4wp-social' ), array( 'status' => 400 ) );
+		}
+		Remote_Link::unlink( (int) $request['post_id'], $platform );
 
 		return new WP_REST_Response( array( 'unlinked' => true ) );
 	}
