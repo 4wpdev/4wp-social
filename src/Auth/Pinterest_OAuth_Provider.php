@@ -14,7 +14,7 @@ use WP_Error;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Scopes: boards:read, pins:read, pins:write, user_accounts:read.
+ * Scopes: boards:read, boards:write (required to create pins), pins:read, pins:write, user_accounts:read.
  * Token endpoint uses HTTP Basic auth (client_id:client_secret).
  */
 final class Pinterest_OAuth_Provider implements OAuth_Provider_Interface {
@@ -24,7 +24,7 @@ final class Pinterest_OAuth_Provider implements OAuth_Provider_Interface {
 	private const AUTH_URL  = 'https://www.pinterest.com/oauth/';
 	private const TOKEN_URL = 'https://api.pinterest.com/v5/oauth/token';
 
-	private const SCOPES = array( 'boards:read', 'pins:read', 'pins:write', 'user_accounts:read' );
+	private const SCOPES = array( 'boards:read', 'boards:write', 'pins:read', 'pins:write', 'user_accounts:read' );
 
 	public function get_slug(): string {
 		return self::SLUG;
