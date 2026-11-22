@@ -11,7 +11,6 @@
  */
 
 use ForWP\Social\Admin\Admin_Menu;
-use ForWP\Social\Auth\Google_OAuth_Provider;
 use ForWP\Social\Contracts\Analytics_Import_Interface;
 use ForWP\Social\Modules\Analytics\Analytics;
 
@@ -61,13 +60,33 @@ $forwp_social_labels  = array(
 		<div class="notice notice-error is-dismissible"><p><?php echo esc_html( $error ); ?></p></div>
 	<?php endif; ?>
 
-	<div class="forwp-social-analytics">
+	<?php
+	// One platform per page: ?source=<slug>, default = first source.
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only view state.
+	$forwp_social_current = isset( $_GET['source'] ) ? sanitize_text_field( wp_unslash( $_GET['source'] ) ) : '';
+	if ( ! isset( $sources[ $forwp_social_current ] ) ) {
+		$forwp_social_current = (string) array_key_first( $sources );
+	}
+	$forwp_social_partials = array(
+		'youtube.com'   => 'analytics-youtube.php',
+		'tiktok.com'    => 'analytics-tiktok.php',
+		'instagram.com' => 'analytics-instagram.php',
+		'facebook.com'  => 'analytics-facebook.php',
+	);
+	?>
+	<nav class="nav-tab-wrapper forwp-social-tabs" aria-label="<?php esc_attr_e( 'Analytics platforms', '4wp-social' ); ?>">
 		<?php foreach ( $sources as $forwp_social_slug => $forwp_social_source ) : ?>
+			<a href="<?php echo esc_url( Admin_Menu::analytics_url( array( 'source' => $forwp_social_slug ) ) ); ?>" class="nav-tab<?php echo $forwp_social_current === $forwp_social_slug ? ' nav-tab-active' : ''; ?>"><?php echo esc_html( $forwp_social_source->label() ); ?></a>
+		<?php endforeach; ?>
+	</nav>
+
+	<div class="forwp-social-analytics forwp-social-analytics--single">
+		<?php foreach ( array( $forwp_social_current => $sources[ $forwp_social_current ] ) as $forwp_social_slug => $forwp_social_source ) : ?>
 			<?php
 			$forwp_social_status = $forwp_social_source->status();
 			$forwp_social_snap   = $snapshots[ $forwp_social_slug ] ?? null;
 			?>
-			<section class="forwp-social-dash__box<?php echo Google_OAuth_Provider::SLUG === $forwp_social_slug ? ' forwp-social-analytics__wide' : ''; ?>" id="<?php echo esc_attr( 'forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $forwp_social_slug ) ) ); ?>">
+			<section class="forwp-social-dash__box" id="<?php echo esc_attr( 'forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $forwp_social_slug ) ) ); ?>">
 				<h2>
 					<?php echo esc_html( $forwp_social_source->label() ); ?>
 					<span class="forwp-social-badge<?php echo Analytics::READY === $forwp_social_status ? ' forwp-social-badge--on' : ''; ?>"><?php echo esc_html( $forwp_social_labels[ $forwp_social_status ] ?? $forwp_social_status ); ?></span>
@@ -96,9 +115,9 @@ $forwp_social_labels  = array(
 				<?php endif; ?>
 
 				<?php
-				if ( $forwp_social_snap && Google_OAuth_Provider::SLUG === $forwp_social_slug ) {
+				if ( $forwp_social_snap && isset( $forwp_social_partials[ $forwp_social_slug ] ) ) {
 					$forwp_social_data = (array) $forwp_social_snap['data'];
-					include FORWP_SOCIAL_PATH . 'views/partials/analytics-youtube.php';
+					include FORWP_SOCIAL_PATH . 'views/partials/' . $forwp_social_partials[ $forwp_social_slug ];
 				}
 				?>
 

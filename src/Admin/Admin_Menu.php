@@ -220,7 +220,7 @@ final class Admin_Menu {
 			? array( 'forwp_social_error' => $result->get_error_message() )
 			: array( 'forwp_social_notice' => 'analytics_fetched' );
 
-		wp_safe_redirect( self::analytics_url( $args ) . '#forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $source ) ) );
+		wp_safe_redirect( self::analytics_url( array_merge( $args, array( 'source' => $source ) ) ) );
 		exit;
 	}
 
@@ -359,7 +359,7 @@ final class Admin_Menu {
 			? array( 'forwp_social_error' => $result->get_error_message() )
 			: array( 'forwp_social_notice' => 'analytics_imported' );
 
-		wp_safe_redirect( self::analytics_url( $args ) . '#forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $source ) ) );
+		wp_safe_redirect( self::analytics_url( array_merge( $args, array( 'source' => $source ) ) ) );
 		exit;
 	}
 

@@ -17,13 +17,14 @@ use WP_Error;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Needs `user.info.stats` and `video.list` (enable them in the TikTok app, see forwp_social_oauth_scopes).
+ * Needs `user.info.profile`, `user.info.stats` and `video.list` (Display API in the TikTok app), then Reconnect.
  */
 final class TikTok_Source implements Analytics_Source_Interface {
 
 	private const API          = 'https://open.tiktokapis.com/v2';
-	private const USER_FIELDS  = 'open_id,display_name,follower_count,following_count,likes_count,video_count';
-	private const VIDEO_FIELDS = 'id,title,create_time,share_url,duration,view_count,like_count,comment_count,share_count';
+	private const USER_FIELDS  = 'open_id,display_name,username,avatar_url,profile_deep_link,follower_count,following_count,likes_count,video_count';
+	private const VIDEO_FIELDS = 'id,title,video_description,create_time,share_url,duration,cover_image_url,view_count,like_count,comment_count,share_count';
+	private const VIDEO_LIMIT  = 100;
 
 	/**
 	 * {@inheritDoc}
@@ -50,7 +51,7 @@ final class TikTok_Source implements Analytics_Source_Interface {
 	 * {@inheritDoc}
 	 */
 	public function note(): string {
-		return __( 'Account totals and the last 20 videos with views, likes, comments and shares. Needs the user.info.stats and video.list scopes approved in the TikTok app, then Reconnect.', '4wp-social' );
+		return __( 'Account totals and the last 100 videos with views, likes, comments and shares. Needs the user.info.profile, user.info.stats and video.list scopes (Display API) in the TikTok app, then Reconnect.', '4wp-social' );
 	}
 
 	/**
@@ -66,8 +67,30 @@ final class TikTok_Source implements Analytics_Source_Interface {
 
 		return array(
 			'user'   => Analytics::part( $this->unwrap( Http::request( 'GET', self::API . '/user/info/?fields=' . self::USER_FIELDS, array( 'headers' => $headers ) ) ) ),
-			'videos' => Analytics::part( $this->unwrap( Http::json( 'POST', self::API . '/video/list/?fields=' . self::VIDEO_FIELDS, array( 'max_count' => 20 ), $headers ) ) ),
+			'videos' => Analytics::part( $this->videos( $headers ) ),
 		);
+	}
+
+	/**
+	 * Videos, newest first, 20 per page up to VIDEO_LIMIT.
+	 *
+	 * @param array<string, string> $headers Auth headers.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	private function videos( array $headers ) {
+		$videos = array();
+		$cursor = 0;
+		do {
+			$body = array( 'max_count' => 20 ) + ( $cursor ? array( 'cursor' => $cursor ) : array() );
+			$page = $this->unwrap( Http::json( 'POST', self::API . '/video/list/?fields=' . self::VIDEO_FIELDS, $body, $headers ) );
+			if ( is_wp_error( $page ) ) {
+				return $videos ? array( 'videos' => $videos, 'error_more' => $page->get_error_message() ) : $page;
+			}
+			$videos = array_merge( $videos, (array) ( $page['videos'] ?? array() ) );
+			$cursor = (int) ( $page['cursor'] ?? 0 );
+		} while ( ! empty( $page['has_more'] ) && $cursor && count( $videos ) < self::VIDEO_LIMIT );
+
+		return array( 'videos' => $videos );
 	}
 
 	/**

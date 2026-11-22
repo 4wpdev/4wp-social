@@ -22,7 +22,7 @@ final class TikTok_OAuth_Provider implements OAuth_Provider_Interface {
 	private const AUTH_URL  = 'https://www.tiktok.com/v2/auth/authorize/';
 	private const TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 
-	private const SCOPES = array( 'user.info.basic', 'video.publish' );
+	private const SCOPES = array( 'user.info.basic', 'video.publish', 'user.info.profile', 'user.info.stats', 'video.list' );
 
 	public function get_slug(): string {
 		return self::SLUG;
@@ -48,8 +48,8 @@ final class TikTok_OAuth_Provider implements OAuth_Provider_Interface {
 			'steps'                 => array(
 				__( 'In TikTok for Developers → <strong>Manage apps</strong> → <strong>Connect an app</strong>.', '4wp-social' ),
 				__( 'App details: icon, name, category, Terms of Service and Privacy Policy URLs, platform <strong>Web</strong> with your site URL.', '4wp-social' ),
-				__( '<strong>Add products</strong>: <strong>Login Kit</strong> and <strong>Content Posting API</strong>. In Content Posting API turn on <strong>Direct Post</strong>.', '4wp-social' ),
-				__( '<strong>Scopes</strong>: <code>user.info.basic</code> and <code>video.publish</code>.', '4wp-social' ),
+				__( '<strong>Add products</strong>: <strong>Login Kit</strong>, <strong>Content Posting API</strong> and <strong>Display API</strong> (analytics). In Content Posting API turn on <strong>Direct Post</strong>.', '4wp-social' ),
+				__( '<strong>Scopes</strong>: <code>user.info.basic</code>, <code>video.publish</code>, and for analytics <code>user.info.profile</code>, <code>user.info.stats</code>, <code>video.list</code>.', '4wp-social' ),
 				__( 'Login Kit → <strong>Redirect URI</strong> → Web → paste the Redirect URI below (https, no query string).', '4wp-social' ),
 				__( 'For testing: open the <strong>Sandbox</strong> tab, create a sandbox and add your TikTok account as a <strong>Target user</strong>. Use the sandbox keys until the app is approved.', '4wp-social' ),
 				__( 'Copy the <strong>Client key</strong> and <strong>Client secret</strong> into step 2.', '4wp-social' ),
