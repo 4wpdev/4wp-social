@@ -105,6 +105,29 @@ $forwp_social_actions = Admin_Menu::actions();
 	</div>
 
 	<div class="forwp-social-panel">
+		<h3 class="forwp-social-section-title"><?php esc_html_e( 'Analytics', '4wp-social' ); ?></h3>
+		<label class="forwp-social-toggle-row">
+			<input type="checkbox" name="forwp_social_settings[analytics_daily]" value="1" <?php checked( ! empty( $settings['analytics_daily'] ) ); ?> />
+			<span>
+				<strong><?php esc_html_e( 'Collect analytics once a day', '4wp-social' ); ?></strong><br />
+				<span class="forwp-social-muted"><?php esc_html_e( 'Every connected source (YouTube first) is fetched daily. "Fetch now" on the Analytics page updates it by hand at any time.', '4wp-social' ); ?></span>
+			</span>
+		</label>
+		<?php $forwp_social_next = wp_next_scheduled( ForWP\Social\Modules\Analytics\Analytics::CRON_HOOK ); ?>
+		<p class="forwp-social-field__help">
+			<?php
+			echo esc_html(
+				$forwp_social_next
+					/* translators: %s: date and time of the next run. */
+					? sprintf( __( 'Next run: %s', '4wp-social' ), wp_date( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $forwp_social_next ) )
+					: __( 'Not scheduled.', '4wp-social' )
+			);
+			?>
+			· <a href="<?php echo esc_url( Admin_Menu::analytics_url() ); ?>"><?php esc_html_e( 'Open Analytics', '4wp-social' ); ?></a>
+		</p>
+	</div>
+
+	<div class="forwp-social-panel">
 		<h3 class="forwp-social-section-title"><?php esc_html_e( 'Video', '4wp-social' ); ?></h3>
 		<p class="forwp-social-muted"><?php esc_html_e( 'Names of the video post type and its series taxonomy. If the site already has a type with this name, Video adds its fields to it instead of registering a new one.', '4wp-social' ); ?></p>
 

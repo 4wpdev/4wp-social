@@ -11,6 +11,7 @@
  */
 
 use ForWP\Social\Admin\Admin_Menu;
+use ForWP\Social\Auth\Google_OAuth_Provider;
 use ForWP\Social\Contracts\Analytics_Import_Interface;
 use ForWP\Social\Modules\Analytics\Analytics;
 
@@ -31,7 +32,27 @@ $forwp_social_labels  = array(
 		<span class="forwp-social-admin-heading__icon" aria-hidden="true"><span class="dashicons dashicons-chart-bar"></span></span>
 		<span class="forwp-social-admin-heading__text"><span><?php esc_html_e( 'Analytics', '4wp-social' ); ?></span></span>
 	</h1>
-	<p class="forwp-social-admin-lead"><?php esc_html_e( 'Raw data from each platform, fetched on demand. Comparison and reports come next.', '4wp-social' ); ?></p>
+	<p class="forwp-social-admin-lead"><?php esc_html_e( 'Data from each platform: collected once a day, or by hand with "Fetch now".', '4wp-social' ); ?></p>
+	<?php
+	$forwp_social_next  = wp_next_scheduled( Analytics::CRON_HOOK );
+	$forwp_social_last  = get_option( Analytics::LAST_DAILY, array() );
+	$forwp_social_dtfmt = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
+	?>
+	<p class="forwp-social-muted">
+		<?php
+		echo esc_html(
+			$forwp_social_next
+				/* translators: %s: date and time. */
+				? sprintf( __( 'Daily collection: next run %s', '4wp-social' ), wp_date( $forwp_social_dtfmt, (int) $forwp_social_next ) )
+				: __( 'Daily collection is off', '4wp-social' )
+		);
+		if ( ! empty( $forwp_social_last['time'] ) ) {
+			/* translators: %s: date and time. */
+			echo esc_html( ' · ' . sprintf( __( 'last run %s', '4wp-social' ), wp_date( $forwp_social_dtfmt, (int) $forwp_social_last['time'] ) ) );
+		}
+		?>
+		· <a href="<?php echo esc_url( Admin_Menu::tab_url( 'modules' ) ); ?>"><?php esc_html_e( 'Settings', '4wp-social' ); ?></a>
+	</p>
 
 	<?php if ( isset( $forwp_social_notices[ $notice ] ) ) : ?>
 		<div class="notice notice-success is-dismissible"><p><?php echo esc_html( $forwp_social_notices[ $notice ] ); ?></p></div>
@@ -46,7 +67,7 @@ $forwp_social_labels  = array(
 			$forwp_social_status = $forwp_social_source->status();
 			$forwp_social_snap   = $snapshots[ $forwp_social_slug ] ?? null;
 			?>
-			<section class="forwp-social-dash__box" id="<?php echo esc_attr( 'forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $forwp_social_slug ) ) ); ?>">
+			<section class="forwp-social-dash__box<?php echo Google_OAuth_Provider::SLUG === $forwp_social_slug ? ' forwp-social-analytics__wide' : ''; ?>" id="<?php echo esc_attr( 'forwp-social-source-' . sanitize_html_class( str_replace( '.', '-', $forwp_social_slug ) ) ); ?>">
 				<h2>
 					<?php echo esc_html( $forwp_social_source->label() ); ?>
 					<span class="forwp-social-badge<?php echo Analytics::READY === $forwp_social_status ? ' forwp-social-badge--on' : ''; ?>"><?php echo esc_html( $forwp_social_labels[ $forwp_social_status ] ?? $forwp_social_status ); ?></span>
@@ -73,6 +94,13 @@ $forwp_social_labels  = array(
 						<button type="submit" class="button"><?php esc_html_e( 'Import file', '4wp-social' ); ?></button>
 					</form>
 				<?php endif; ?>
+
+				<?php
+				if ( $forwp_social_snap && Google_OAuth_Provider::SLUG === $forwp_social_slug ) {
+					$forwp_social_data = (array) $forwp_social_snap['data'];
+					include FORWP_SOCIAL_PATH . 'views/partials/analytics-youtube.php';
+				}
+				?>
 
 				<?php if ( $forwp_social_snap ) : ?>
 					<details class="forwp-social-json">

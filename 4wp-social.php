@@ -32,5 +32,6 @@ if ( file_exists( FORWP_SOCIAL_PATH . 'vendor/autoload.php' ) ) {
 
 register_activation_hook( __FILE__, array( 'ForWP\\Social\\Database\\Schema', 'activate' ) );
 register_deactivation_hook( __FILE__, array( 'ForWP\\Social\\Modules\\Posting\\Queue', 'deactivate' ) );
+register_deactivation_hook( __FILE__, array( 'ForWP\\Social\\Modules\\Analytics\\Analytics', 'deactivate' ) );
 
 ForWP\Social\Plugin::instance()->boot();

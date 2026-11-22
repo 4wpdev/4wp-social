@@ -15,6 +15,7 @@ use ForWP\Social\Modules\Analytics\Sources\LinkedIn_Source;
 use ForWP\Social\Modules\Analytics\Sources\Planned_Source;
 use ForWP\Social\Modules\Analytics\Sources\TikTok_Source;
 use ForWP\Social\Modules\Analytics\Sources\YouTube_Source;
+use ForWP\Social\Core\Settings;
 use WP_Error;
 
 defined( 'ABSPATH' ) || exit;
@@ -26,6 +27,12 @@ final class Analytics {
 
 	public const OPTION = 'forwp_social_analytics_snapshots';
 
+	/**
+	 * Daily collection: WP-Cron hook and last run { time, results: slug => ok|error }.
+	 */
+	public const CRON_HOOK  = 'forwp_social_analytics_daily';
+	public const LAST_DAILY = 'forwp_social_analytics_last_daily';
+
 	public const READY         = 'ready';
 	public const NOT_CONNECTED = 'not_connected';
 	public const PLANNED       = 'planned';
@@ -35,6 +42,61 @@ final class Analytics {
 	 * Snapshot part that holds the last imported file.
 	 */
 	public const IMPORT_KEY = 'import';
+
+	/**
+	 * Hooks for the daily collection.
+	 */
+	public static function boot(): void {
+		add_action( self::CRON_HOOK, array( self::class, 'run_daily' ) );
+		add_action( 'init', array( self::class, 'sync_schedule' ), 20 );
+	}
+
+	/**
+	 * Keep the cron event in line with the "analytics_daily" setting.
+	 */
+	public static function sync_schedule(): void {
+		$next = wp_next_scheduled( self::CRON_HOOK );
+		if ( ! Settings::get( 'analytics_daily', true ) ) {
+			if ( $next ) {
+				wp_clear_scheduled_hook( self::CRON_HOOK );
+			}
+			return;
+		}
+		if ( ! $next ) {
+			// First run tonight at 04:00 site time, then every 24 h.
+			$first = ( new \DateTimeImmutable( 'tomorrow 04:00', wp_timezone() ) )->getTimestamp();
+			wp_schedule_event( $first, 'daily', self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Cron callback: fetch every connected API source.
+	 */
+	public static function run_daily(): void {
+		$results = array();
+		foreach ( self::sources() as $slug => $source ) {
+			if ( self::READY !== $source->status() ) {
+				continue;
+			}
+			$data             = self::refresh( $slug );
+			$results[ $slug ] = is_wp_error( $data ) ? $data->get_error_message() : 'ok';
+		}
+		update_option(
+			self::LAST_DAILY,
+			array(
+				'time'    => time(),
+				'results' => $results,
+			),
+			false
+		);
+	}
+
+	/**
+	 * Plugin deactivation.
+	 */
+	public static function deactivate(): void {
+		wp_clear_scheduled_hook( self::CRON_HOOK );
+	}
 
 	/**
 	 * Sources keyed by slug.

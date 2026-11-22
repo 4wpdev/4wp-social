@@ -65,6 +65,7 @@ final class Plugin {
 		Rest_Jobs::register();
 		Rest_Link::register();
 		Rest_Analytics::register();
+		\ForWP\Social\Modules\Analytics\Analytics::boot();
 
 		// Modules register on init so third-party plugins can add theirs via forwp_social_modules.
 		add_action( 'init', array( Module_Registry::class, 'boot_enabled' ), 5 );

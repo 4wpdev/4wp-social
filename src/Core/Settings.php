@@ -42,6 +42,8 @@ final class Settings {
 			'manual_notify'    => false,
 			'default_privacy'  => 'public',
 			'caption_language' => 'en',
+			// Analytics: fetch every connected source once a day (WP-Cron). "Fetch now" stays manual.
+			'analytics_daily'  => true,
 		);
 	}
 
@@ -132,6 +134,7 @@ final class Settings {
 				'manual_notify'    => ! empty( $input['manual_notify'] ),
 				'default_privacy'  => $privacy,
 				'caption_language' => '' !== $language ? $language : 'en',
+				'analytics_daily'  => ! empty( $input['analytics_daily'] ),
 			),
 			false
 		);
