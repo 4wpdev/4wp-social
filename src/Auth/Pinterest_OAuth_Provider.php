@@ -40,15 +40,20 @@ final class Pinterest_OAuth_Provider implements OAuth_Provider_Interface {
 			'client_secret' => __( 'App secret key', '4wp-social' ),
 			'console_url'   => 'https://developers.pinterest.com/apps/',
 			'extra_fields'  => array(
-				'board'   => array(
+				'board'         => array(
 					'label' => __( 'Board (name or ID)', '4wp-social' ),
 					'type'  => 'text',
 					'help'  => __( 'Pins go to this board. Empty: the first board of the account. meta.json "board" wins.', '4wp-social' ),
 				),
-				'sandbox' => array(
+				'sandbox'       => array(
 					'label' => __( 'Trial access: post to the sandbox', '4wp-social' ),
 					'type'  => 'checkbox',
 					'help'  => __( 'Apps with Trial access can create pins only in the Pinterest sandbox (api-sandbox.pinterest.com). Turn off after Standard access is approved.', '4wp-social' ),
+				),
+				'sandbox_token' => array(
+					'label' => __( 'Sandbox access token', '4wp-social' ),
+					'type'  => 'password',
+					'help'  => __( 'The connected account token does not work in the sandbox. Pinterest Developers → your app → Configure → Generate access tokens → Sandbox → Generate token. Valid 30 days. Leave empty to keep the saved token.', '4wp-social' ),
 				),
 			),
 		);

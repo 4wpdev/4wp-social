@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
  */
 final class Rest_Platforms {
 
-	private const FIELDS = array( 'label', 'connector', 'url', 'format', 'icon', 'enabled' );
+	private const FIELDS = array( 'label', 'connector', 'url', 'format', 'icon', 'types', 'enabled' );
 
 	/**
 	 * Hook the routes.
@@ -111,8 +111,31 @@ final class Rest_Platforms {
 				array_values( Platform_Registry::all( false ) )
 			),
 			'connectors'   => $connectors,
+			'post_types'   => self::post_types(),
 			'accounts_url' => admin_url( 'admin.php?page=forwp-social-settings&tab=accounts' ),
 		);
+	}
+
+	/**
+	 * Content types a platform can take: public post types with an admin screen.
+	 *
+	 * @return array<int, array{key: string, label: string, icon: string}>
+	 */
+	private static function post_types(): array {
+		$out = array();
+		foreach ( get_post_types( array( 'public' => true ), 'objects' ) as $object ) {
+			if ( 'attachment' === $object->name || ! $object->show_ui ) {
+				continue;
+			}
+			$icon  = is_string( $object->menu_icon ) && 0 === strpos( $object->menu_icon, 'dashicons-' ) ? $object->menu_icon : ( 'page' === $object->name ? 'dashicons-admin-page' : 'dashicons-admin-post' );
+			$out[] = array(
+				'key'   => $object->name,
+				'label' => (string) $object->labels->singular_name,
+				'icon'  => $icon,
+			);
+		}
+
+		return $out;
 	}
 
 	/**
@@ -134,7 +157,16 @@ final class Rest_Platforms {
 	 * @return array<string, mixed>|WP_Error
 	 */
 	public static function update( WP_REST_Request $request ) {
-		$result = Platform_Registry::update( (string) $request['key'], self::fields( $request ) );
+		$key    = (string) $request['key'];
+		$new    = (string) $request->get_param( 'new_key' );
+		if ( '' !== $new && $new !== $key ) {
+			$renamed = Platform_Registry::rename( $key, $new );
+			if ( is_wp_error( $renamed ) ) {
+				return $renamed;
+			}
+			$key = (string) $renamed['key'];
+		}
+		$result = Platform_Registry::update( $key, self::fields( $request ) );
 
 		return is_wp_error( $result ) ? $result : self::payload();
 	}

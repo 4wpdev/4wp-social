@@ -245,6 +245,16 @@ final class Pinterest_Adapter implements Image_Capable_Interface {
 	 * @return Pinterest_Client|WP_Error
 	 */
 	private function client() {
+		if ( $this->sandbox() ) {
+			// The sandbox rejects OAuth tokens; it needs the token generated in the app console.
+			$token = trim( Credentials_Store::extra( self::SLUG, 'sandbox_token' ) );
+			if ( '' === $token ) {
+				return new WP_Error( 'forwp_social_pinterest_sandbox_token', __( 'Sandbox is on but the Sandbox access token is empty. Generate it in Pinterest Developers and save it in the Pinterest settings.', '4wp-social' ) );
+			}
+
+			return new Pinterest_Client( $token, true );
+		}
+
 		$token = OAuth_Controller::instance()->get_access_token( self::SLUG );
 		if ( is_wp_error( $token ) ) {
 			return $token;

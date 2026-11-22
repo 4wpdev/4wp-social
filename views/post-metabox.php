@@ -29,6 +29,8 @@ $forwp_social_files = array(
 			$forwp_social_job   = $jobs->latest( (int) $post->ID, $forwp_social_key );
 			$forwp_social_done  = $published[ $forwp_social_key ] ?? null;
 			$forwp_social_ready = $forwp_social_adapter->is_ready();
+			$forwp_social_queue = $forwp_social_job && 'queued' === (string) $forwp_social_job->status ? $forwp_social_job : null;
+			$forwp_social_when  = $forwp_social_queue ? wp_date( 'Y-m-d\TH:i', (int) strtotime( $forwp_social_queue->run_at . ' UTC' ) ) : '';
 			?>
 			<li>
 				<label>
@@ -45,7 +47,10 @@ $forwp_social_files = array(
 						<a href="<?php echo esc_url( admin_url( 'admin.php?page=forwp-social-settings&tab=accounts' ) ); ?>"><?php esc_html_e( 'connect', '4wp-social' ); ?></a>
 					<?php endif; ?>
 				</span>
-				<?php if ( $forwp_social_done || ( 'youtube.com' === $forwp_social_key && $forwp_social_ready ) ) : ?>
+				<?php if ( ! $forwp_social_done && $forwp_social_ready ) : ?>
+					<input type="datetime-local" class="forwp-social-when" data-platform="<?php echo esc_attr( $forwp_social_key ); ?>" data-job-id="<?php echo esc_attr( $forwp_social_queue ? (string) $forwp_social_queue->id : '' ); ?>" value="<?php echo esc_attr( $forwp_social_when ); ?>" title="<?php esc_attr_e( 'Publish date on this platform (empty: with the post)', '4wp-social' ); ?>" aria-label="<?php esc_attr_e( 'Publish date on this platform', '4wp-social' ); ?>" />
+				<?php endif; ?>
+				<?php if ( $forwp_social_done || $forwp_social_ready ) : ?>
 					<div class="forwp-social-link" data-platform="<?php echo esc_attr( $forwp_social_key ); ?>">
 						<?php if ( $forwp_social_done ) : ?>
 							<?php
@@ -55,6 +60,13 @@ $forwp_social_files = array(
 							?>
 							<code title="<?php echo esc_attr( (string) $forwp_social_done['id'] ); ?>"><?php echo esc_html( $forwp_social_rid ); ?></code>
 							<button type="button" class="button-link forwp-social-unlink"><?php esc_html_e( 'Unlink', '4wp-social' ); ?></button>
+						<?php elseif ( 'youtube.com' !== $forwp_social_key ) : ?>
+							<details>
+								<?php /* translators: %s: platform name. */ ?>
+								<summary><?php echo esc_html( sprintf( __( 'Already on %s?', '4wp-social' ), $forwp_social_adapter->get_label() ) ); ?></summary>
+								<input type="url" class="widefat forwp-social-link-url" placeholder="<?php esc_attr_e( 'Link to the published post', '4wp-social' ); ?>" />
+								<button type="button" class="button button-small forwp-social-link-url-save"><?php esc_html_e( 'Link', '4wp-social' ); ?></button>
+							</details>
 						<?php else : ?>
 							<details>
 								<summary><?php esc_html_e( 'Already on YouTube?', '4wp-social' ); ?></summary>

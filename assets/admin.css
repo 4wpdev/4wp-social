@@ -159,7 +159,13 @@
 .forwp-social-platform-form { background: #f6f7f7; border-radius: 4px; margin-bottom: 8px; max-width: 960px; padding: 12px; }
 .forwp-social-platform .forwp-social-platform-form { border-radius: 0 0 4px 4px; border-top: 1px solid #dcdcde; margin: 0; }
 .forwp-social-platform-grid { display: grid; gap: 10px 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.forwp-social-platform-field span { display: block; font-weight: 600; margin-bottom: 3px; }
+.forwp-social-platform-field > span { display: block; font-weight: 600; margin-bottom: 3px; }
+.forwp-social-platform-field--wide { grid-column: 1 / -1; }
+.forwp-social-platform-types { display: flex; flex-wrap: wrap; gap: 6px 16px; }
+.forwp-social-platform-types label { display: inline-flex; align-items: center; gap: 2px; }
+.forwp-social-platform-types code { font-size: 11px; }
+.forwp-social-platform__types { display: inline-flex; gap: 2px; color: #50575e; }
+.forwp-social-platform__types .forwp-social-muted { font-size: 12px; }
 .forwp-social-platform-field input, .forwp-social-platform-field select { max-width: 100%; width: 100%; }
 .forwp-social-platform-buttons { margin: 12px 0 0; }
 

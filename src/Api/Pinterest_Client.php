@@ -88,18 +88,29 @@ final class Pinterest_Client {
 		if ( is_wp_error( $boards ) ) {
 			return $boards;
 		}
-		if ( ! $boards ) {
-			return new WP_Error( 'forwp_social_pinterest_board', __( 'The Pinterest account has no boards. Create one first.', '4wp-social' ) );
-		}
-
 		$wanted = trim( $wanted );
-		if ( '' === $wanted ) {
+		if ( $boards && '' === $wanted ) {
 			return $boards[0]['id'];
 		}
 		foreach ( $boards as $board ) {
 			if ( $board['id'] === $wanted || 0 === strcasecmp( $board['name'], $wanted ) ) {
 				return $board['id'];
 			}
+		}
+
+		// The sandbox starts with no boards: create the wanted one.
+		if ( $this->sandbox ) {
+			$res = $this->call( 'POST', $this->base() . '/boards', array( 'name' => '' !== $wanted ? $wanted : '4WP.dev' ) );
+			if ( is_wp_error( $res ) ) {
+				return $res;
+			}
+			if ( ! empty( $res['id'] ) ) {
+				return (string) $res['id'];
+			}
+		}
+
+		if ( ! $boards ) {
+			return new WP_Error( 'forwp_social_pinterest_board', __( 'The Pinterest account has no boards. Create one first.', '4wp-social' ) );
 		}
 
 		/* translators: %s: board name or id. */

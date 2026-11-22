@@ -50,6 +50,7 @@ final class Platform_Registry {
 				'url'       => $row[3],
 				'format'    => '',
 				'icon'      => '',
+				'types'     => array(),
 				'enabled'   => $row[4],
 				'order'     => $order,
 			);
@@ -153,6 +154,42 @@ final class Platform_Registry {
 		}
 
 		return self::store( $rows, $key, array_merge( $rows[ $key ], $input ) );
+	}
+
+	/**
+	 * Change the key of a platform. Statuses already saved under the old key are not moved.
+	 *
+	 * @param string $key     Current key.
+	 * @param string $new_key New key, as in meta.json.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	public static function rename( string $key, string $new_key ) {
+		$rows = self::all( false );
+		if ( ! isset( $rows[ $key ] ) ) {
+			return new WP_Error( 'forwp_social_platform_missing', __( 'Platform not found.', '4wp-social' ), array( 'status' => 404 ) );
+		}
+		$new_key = self::clean_key( $new_key );
+		if ( '' === $new_key ) {
+			return new WP_Error( 'forwp_social_platform_key', __( 'The key can have only letters, digits, dots and hyphens, e.g. example.com.', '4wp-social' ), array( 'status' => 400 ) );
+		}
+		if ( $new_key === $key ) {
+			return $rows[ $key ];
+		}
+		if ( isset( $rows[ $new_key ] ) ) {
+			return new WP_Error( 'forwp_social_platform_exists', __( 'A platform with this key already exists.', '4wp-social' ), array( 'status' => 409 ) );
+		}
+
+		$out = array();
+		foreach ( $rows as $k => $row ) {
+			if ( $k === $key ) {
+				$out[ $new_key ] = array_merge( $row, array( 'key' => $new_key ) );
+				continue;
+			}
+			$out[ $k ] = $row;
+		}
+		self::save( $out );
+
+		return self::get( $new_key );
 	}
 
 	/**
@@ -270,6 +307,7 @@ final class Platform_Registry {
 				'url'       => esc_url_raw( (string) ( $row['url'] ?? '' ) ),
 				'format'    => sanitize_text_field( (string) ( $row['format'] ?? '' ) ),
 				'icon'      => esc_url_raw( (string) ( $row['icon'] ?? '' ) ),
+				'types'     => self::clean_types( $row['types'] ?? array() ),
 				'enabled'   => ! empty( $row['enabled'] ),
 				'order'     => isset( $row['order'] ) ? (int) $row['order'] : (int) $index,
 			);
@@ -288,6 +326,18 @@ final class Platform_Registry {
 		update_option( self::OPTION, self::sanitize_rows( $input ), false );
 		// A list saved by the user is the whole list: new defaults are not added to it.
 		update_option( self::OPTION . '_added', self::ADDED, false );
+	}
+
+	/**
+	 * Post type keys this platform publishes (CPT keys, as package.type in meta.json).
+	 *
+	 * @param mixed $types Raw list.
+	 * @return string[]
+	 */
+	private static function clean_types( $types ): array {
+		$types = array_map( 'sanitize_key', array_map( 'strval', (array) $types ) );
+
+		return array_values( array_unique( array_filter( $types ) ) );
 	}
 
 	/**

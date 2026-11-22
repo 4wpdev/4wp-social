@@ -198,8 +198,10 @@ final class Status_Index {
 		$mode    = self::mode( $entry, $platform );
 		$live_at = (int) ( $context['live_at'] ?? 0 );
 		$delay   = (int) ( self::MODE_MANUAL === $mode ? ( $context['manual_delay'] ?? 0 ) : ( $context['api_delay'] ?? 0 ) );
-		$due     = $live_at > 0 ? $live_at + $delay : 0;
-		$auto    = self::MODE_MANUAL === $mode || ! empty( $context['auto_publish'] );
+		$fixed   = '1' === (string) ( $known['run_at_fixed'] ?? '' ) && '' !== (string) ( $known['run_at'] ?? '' );
+		// A date set by hand in the editor wins over post date + delay.
+		$due     = $fixed ? (int) strtotime( (string) $known['run_at'] ) : ( $live_at > 0 ? $live_at + $delay : 0 );
+		$auto    = $fixed || self::MODE_MANUAL === $mode || ! empty( $context['auto_publish'] );
 		$pending = self::MODE_MANUAL === $mode && $due > 0 && $due <= (int) ( $context['now'] ?? time() );
 
 		return array_merge(

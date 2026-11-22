@@ -96,7 +96,7 @@ final class Posting_Service {
 			}
 
 			$report[ $platform ] = array(
-				'job_id'  => '' === $reason ? $this->jobs->create( $post_id, $platform, time(), Job_Repository::SOURCE_POST, $options ) : 0,
+				'job_id'  => '' === $reason ? $this->jobs->create( $post_id, $platform, self::not_before_publish( $post_id, time() ), Job_Repository::SOURCE_POST, $options ) : 0,
 				'skipped' => $reason,
 			);
 		}
@@ -134,7 +134,7 @@ final class Posting_Service {
 		}
 
 		$keys     = null === $platforms ? Package_Reader::api_platforms( $package ) : $platforms;
-		$run_at   = time() + ( $force ? 0 : Package_Reader::delay_seconds( $package ) );
+		$run_at   = self::not_before_publish( $post_id, time() + ( $force ? 0 : Package_Reader::delay_seconds( $package ) ) );
 		$done     = $this->published_map( $post_id );
 		$borrowed = Package_Reader::borrowed_item( Package_Importer::snapshot( $post_id ) );
 		$report   = array();
@@ -378,6 +378,20 @@ final class Posting_Service {
 		$map = get_post_meta( $post_id, self::PUBLISHED_META, true );
 
 		return is_array( $map ) ? $map : array();
+	}
+
+	/**
+	 * A scheduled post: the job starts at its publish time, so the calendar shows the real day.
+	 *
+	 * @param int $post_id Post id.
+	 * @param int $run_at  Wanted start (Unix).
+	 */
+	public static function not_before_publish( int $post_id, int $run_at ): int {
+		if ( 'future' !== get_post_status( $post_id ) ) {
+			return $run_at;
+		}
+
+		return max( $run_at, (int) get_post_time( 'U', true, $post_id ) );
 	}
 
 	/**

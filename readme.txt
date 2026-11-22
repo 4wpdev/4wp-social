@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.6.1
+Stable tag: 0.6.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,12 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.6.2 =
+* Pinterest: "Sandbox access token" field. With "post to the sandbox" on, pins, media and boards use this token (the OAuth token is rejected by the sandbox).
+* Pinterest sandbox: the board is created automatically when the sandbox has none.
+* Calendar: jobs of a scheduled post start at its publish time, not on the day they were queued.
+* Editor: own publish date per platform (API and manual), a queued job can be moved. "Already on …?" for every platform; linking drops the queued job.
 
 = 0.5.7 =
 * Version number fixed: the plugin header and Stable tag now match the release tag.

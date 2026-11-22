@@ -92,6 +92,82 @@
 		} );
 	} );
 
+	// Own date per platform: sent with "Publish to selected"; a queued job moves at once.
+	function schedule( $box ) {
+		var out = {};
+		$box.find( '.forwp-social-when' ).each( function () {
+			if ( this.value ) {
+				out[ String( $( this ).data( 'platform' ) ) ] = this.value;
+			}
+		} );
+		return out;
+	}
+
+	function dateMsg( $el, text ) {
+		$el.closest( '.forwp-social-box, .forwp-social-manual-box' ).find( '.forwp-social-result, .forwp-social-manual-msg' ).first().text( text );
+	}
+
+	$( document ).on( 'change', '.forwp-social-when', function () {
+		var $input = $( this );
+		var jobId = parseInt( $input.attr( 'data-job-id' ), 10 );
+		if ( ! jobId || ! this.value ) {
+			return;
+		}
+		wp.apiFetch( {
+			path: '/forwp-social/v1/jobs/' + jobId + '/schedule',
+			method: 'POST',
+			data: { run_at: this.value },
+		} ).then( function () {
+			dateMsg( $input, i18n.dateSaved );
+		} ).catch( function ( err ) {
+			dateMsg( $input, ( err && err.message ) || i18n.failed );
+		} );
+	} );
+
+	$( document ).on( 'change', '.forwp-social-plan-when', function () {
+		var $input = $( this );
+		var $box = $input.closest( '.forwp-social-manual-box' );
+		wp.apiFetch( {
+			path: '/forwp-social/v1/plan',
+			method: 'POST',
+			data: {
+				post_id: parseInt( $box.data( 'post-id' ), 10 ),
+				platform: String( $input.closest( '[data-platform]' ).data( 'platform' ) ),
+				run_at: this.value,
+			},
+		} ).then( function () {
+			dateMsg( $input, i18n.dateSaved );
+		} ).catch( function ( err ) {
+			dateMsg( $input, ( err && err.message ) || i18n.failed );
+		} );
+	} );
+
+	// Already on another platform: the post link marks it published (and drops a queued job).
+	$( document ).on( 'click', '.forwp-social-link-url-save', function ( e ) {
+		e.preventDefault();
+		var $wrap = $( this ).closest( '.forwp-social-link' );
+		var $msg = $wrap.find( '.forwp-social-link-msg' ).text( '…' );
+		wp.apiFetch( {
+			path: '/forwp-social/v1/crosspost/published',
+			method: 'POST',
+			data: {
+				post_id: postId( $wrap ),
+				platform: String( $wrap.data( 'platform' ) ),
+				url: $wrap.find( '.forwp-social-link-url' ).val(),
+				via: 'manual',
+			},
+		} ).then( function ( res ) {
+			var $li = $wrap.closest( 'li' );
+			$li.find( 'input[type=checkbox]' ).prop( 'checked', false );
+			$li.find( '.forwp-social-when' ).remove();
+			$li.find( '.forwp-social-status' ).attr( 'data-status', 'published' ).empty()
+				.append( $( '<a target="_blank" rel="noopener"/>' ).attr( 'href', res.url ).text( i18n.markedDone ) );
+			$wrap.html( $( '<a target="_blank" rel="noopener"/>' ).attr( 'href', res.url ).text( i18n.linked + ' ' + res.url ) );
+		} ).catch( function ( err ) {
+			$msg.text( ( err && err.message ) || i18n.failed );
+		} );
+	} );
+
 	$( document ).on( 'change', 'input[name=forwp_social_source]', function () {
 		var $box = $( this ).closest( '.forwp-social-box' );
 		$box.find( '.forwp-social-manual' ).prop( 'hidden', 'package' === this.value );
@@ -126,6 +202,7 @@
 				source: $box.data( 'source' ) || $box.find( 'input[name=forwp_social_source]:checked' ).val() || 'post',
 				options: options,
 				force: $box.find( '.forwp-social-force' ).is( ':checked' ),
+				schedule: schedule( $box ),
 			},
 		} ).then( function ( report ) {
 			var reasons = i18n.reasons || {};

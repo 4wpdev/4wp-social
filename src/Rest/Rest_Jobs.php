@@ -9,6 +9,8 @@ namespace ForWP\Social\Rest;
 
 use ForWP\Social\Modules\Posting\Job_Repository;
 use ForWP\Social\Modules\Posting\Posting_Service;
+use ForWP\Social\Modules\Posting\Platform_Registry;
+use ForWP\Social\Modules\Posting\Status_Index;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -73,11 +75,53 @@ final class Rest_Jobs {
 							'type'    => 'boolean',
 							'default' => false,
 						),
+						'schedule'  => array(
+							'type'    => 'object',
+							'default' => array(),
+						),
 					),
 				),
 			)
 		);
 
+		register_rest_route(
+			Rest_Oauth::NAMESPACE_V1,
+			'/jobs/(?P<id>\d+)/schedule',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( self::class, 'schedule' ),
+				'permission_callback' => array( self::class, 'can_schedule' ),
+				'args'                => array(
+					'run_at' => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+				),
+			)
+		);
+		register_rest_route(
+			Rest_Oauth::NAMESPACE_V1,
+			'/plan',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( self::class, 'plan' ),
+				'permission_callback' => array( self::class, 'can_publish' ),
+				'args'                => array(
+					'post_id'  => array(
+						'type'     => 'integer',
+						'required' => true,
+					),
+					'platform' => array(
+						'type'     => 'string',
+						'required' => true,
+					),
+					'run_at'   => array(
+						'type'    => 'string',
+						'default' => '',
+					),
+				),
+			)
+		);
 		register_rest_route(
 			Rest_Oauth::NAMESPACE_V1,
 			'/jobs/(?P<id>\d+)/retry',
@@ -108,6 +152,85 @@ final class Rest_Jobs {
 	}
 
 	/**
+	 * The job's post must be editable.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 */
+	public static function can_schedule( WP_REST_Request $request ): bool {
+		$job = ( new Job_Repository() )->find( (int) $request['id'] );
+
+		return $job && current_user_can( 'publish_posts' ) && current_user_can( 'edit_post', (int) $job->post_id );
+	}
+
+	/**
+	 * Site-time "Y-m-d\TH:i" from the editor → Unix; 0 when empty or invalid.
+	 *
+	 * @param string $value Local date and time.
+	 */
+	public static function local_time( string $value ): int {
+		$value = trim( $value );
+		if ( '' === $value ) {
+			return 0;
+		}
+		try {
+			return ( new \DateTimeImmutable( $value, wp_timezone() ) )->getTimestamp();
+		} catch ( \Exception $e ) {
+			return 0;
+		}
+	}
+
+	/**
+	 * Move a queued job to another time (never before the post goes live).
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function schedule( WP_REST_Request $request ) {
+		$repo = new Job_Repository();
+		$job  = $repo->find( (int) $request['id'] );
+		if ( ! $job || Job_Repository::QUEUED !== $job->status ) {
+			return new WP_Error( 'forwp_social_not_queued', __( 'Only a queued job can be rescheduled.', '4wp-social' ), array( 'status' => 409 ) );
+		}
+		$time = self::local_time( (string) $request['run_at'] );
+		if ( ! $time ) {
+			return new WP_Error( 'forwp_social_bad_date', __( 'Invalid date.', '4wp-social' ), array( 'status' => 400 ) );
+		}
+
+		$repo->update( (int) $job->id, array( 'run_at' => gmdate( 'Y-m-d H:i:s', Posting_Service::not_before_publish( (int) $job->post_id, $time ) ) ) );
+
+		return new WP_REST_Response( self::shape( $repo->find( (int) $job->id ) ) );
+	}
+
+	/**
+	 * Date of a plan without a job (manual platforms): fixed by hand, meta.json syncs keep it. Empty run_at drops it.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function plan( WP_REST_Request $request ) {
+		$post_id  = (int) $request['post_id'];
+		$platform = strtolower( sanitize_text_field( (string) $request['platform'] ) );
+		if ( ! get_post( $post_id ) || ! isset( Platform_Registry::all()[ $platform ] ) ) {
+			return new WP_Error( 'forwp_social_bad_platform', __( 'Unknown platform.', '4wp-social' ), array( 'status' => 400 ) );
+		}
+
+		$time = self::local_time( (string) $request['run_at'] );
+		Status_Index::put(
+			$post_id,
+			$platform,
+			array(
+				'run_at'       => $time ? gmdate( 'c', $time ) : '',
+				'run_at_fixed' => $time ? '1' : '',
+			)
+		);
+		if ( ! $time ) {
+			Status_Index::sync_package( $post_id );
+		}
+
+		return new WP_REST_Response( Status_Index::get( $post_id )[ $platform ] ?? array() );
+	}
+
+	/**
 	 * @param WP_REST_Request $request Request.
 	 */
 	public static function list_jobs( WP_REST_Request $request ): WP_REST_Response {
@@ -128,8 +251,21 @@ final class Rest_Jobs {
 			is_array( $request['options'] ) ? $request['options'] : array(),
 			(bool) $request['force']
 		);
+		if ( is_wp_error( $report ) ) {
+			return $report;
+		}
 
-		return is_wp_error( $report ) ? $report : new WP_REST_Response( $report );
+		// Own date per platform (editor box): never before the post goes live.
+		$repo     = new Job_Repository();
+		$schedule = is_array( $request['schedule'] ) ? $request['schedule'] : array();
+		foreach ( $report as $platform => $row ) {
+			$time = self::local_time( (string) ( $schedule[ $platform ] ?? '' ) );
+			if ( $time && ! empty( $row['job_id'] ) ) {
+				$repo->update( (int) $row['job_id'], array( 'run_at' => gmdate( 'Y-m-d H:i:s', Posting_Service::not_before_publish( (int) $request['post_id'], $time ) ) ) );
+			}
+		}
+
+		return new WP_REST_Response( $report );
 	}
 
 	/**

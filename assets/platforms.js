@@ -83,6 +83,44 @@
 		);
 	}
 
+	function postType( key ) {
+		return ( data.post_types || [] ).filter( function ( t ) {
+			return t.key === key;
+		} )[ 0 ] || null;
+	}
+
+	function typesField( row ) {
+		var chosen = row.types || [];
+		var $box = $( '<div class="forwp-social-platform-types"></div>' );
+		( data.post_types || [] ).forEach( function ( t ) {
+			$box.append(
+				$( '<label></label>' ).append(
+					$( '<input type="checkbox" name="types" />' ).val( t.key ).prop( 'checked', chosen.indexOf( t.key ) > -1 ),
+					' ',
+					$( '<span class="dashicons" aria-hidden="true"></span>' ).addClass( t.icon ),
+					' ',
+					document.createTextNode( t.label ),
+					' ',
+					$( '<code></code>' ).text( t.key )
+				)
+			);
+		} );
+		return $( '<div class="forwp-social-platform-field forwp-social-platform-field--wide"></div>' ).append( $( '<span></span>' ).text( i18n.types ), $box );
+	}
+
+	function typeIcons( row ) {
+		var $wrap = $( '<span class="forwp-social-platform__types"></span>' );
+		var types = row.types || [];
+		if ( ! types.length ) {
+			return $wrap.append( $( '<span class="forwp-social-muted"></span>' ).text( i18n.noTypes ) );
+		}
+		types.forEach( function ( key ) {
+			var t = postType( key );
+			$wrap.append( $( '<span class="dashicons" role="img"></span>' ).addClass( t ? t.icon : 'dashicons-editor-help' ).attr( { title: t ? t.label + ' (' + key + ')' : key, 'aria-label': t ? t.label : key } ) );
+		} );
+		return $wrap;
+	}
+
 	function field( label, $input ) {
 		return $( '<label class="forwp-social-platform-field"></label>' ).append( $( '<span></span>' ).text( label ), $input );
 	}
@@ -91,13 +129,12 @@
 		var $form = $( '<form class="forwp-social-platform-form"></form>' );
 		var $grid = $( '<div class="forwp-social-platform-grid"></div>' );
 		$grid.append( field( i18n.name, $( '<input type="text" name="label" />' ).val( row.label || '' ) ) );
-		if ( isNew ) {
-			$grid.append( field( i18n.key, $( '<input type="text" name="key" required placeholder="example.com" />' ) ) );
-		}
+		$grid.append( field( i18n.key, $( '<input type="text" required placeholder="example.com" />' ).attr( 'name', isNew ? 'key' : 'new_key' ).val( row.key || '' ) ) );
 		$grid.append( field( i18n.source, sourceSelect( row ) ) );
 		$grid.append( field( i18n.openUrl, $( '<input type="url" name="url" />' ).val( row.url || '' ) ) );
 		$grid.append( field( i18n.format, $( '<input type="text" name="format" />' ).val( row.format || '' ) ) );
 		$grid.append( iconField( row ) );
+		$grid.append( typesField( row ) );
 
 		$form.append(
 			$grid,
@@ -110,8 +147,12 @@
 
 		$form.on( 'submit', function ( e ) {
 			e.preventDefault();
-			var body = {};
+			var body = { types: [] };
 			$form.serializeArray().forEach( function ( item ) {
+				if ( 'types' === item.name ) {
+					body.types.push( item.value );
+					return;
+				}
 				body[ item.name ] = item.value;
 			} );
 			if ( isNew ) {
@@ -180,6 +221,7 @@
 				' ',
 				$( '<code></code>' ).text( row.key )
 			),
+			typeIcons( row ),
 			$source,
 			$state,
 			$toggle,

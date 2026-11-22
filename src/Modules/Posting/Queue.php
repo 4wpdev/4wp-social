@@ -110,6 +110,9 @@ final class Queue {
 			}
 
 			foreach ( $repo->due( self::BATCH ) as $job ) {
+				if ( ! Job_Repository::is_approved( $job ) ) {
+					continue; // Waits for approval in 4WP Planner.
+				}
 				$service->run( $job );
 			}
 		} finally {

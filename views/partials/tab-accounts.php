@@ -172,6 +172,9 @@ $forwp_social_icons   = array(
 						<div class="forwp-social-field">
 							<?php if ( 'checkbox' === ( $forwp_social_spec['type'] ?? 'text' ) ) : ?>
 								<label><input type="checkbox" name="extra[<?php echo esc_attr( $forwp_social_field ); ?>]" value="1" <?php checked( '1', $forwp_social_value ); ?> /> <?php echo esc_html( (string) $forwp_social_spec['label'] ); ?></label>
+							<?php elseif ( 'password' === ( $forwp_social_spec['type'] ?? 'text' ) ) : ?>
+								<label class="forwp-social-field__label" for="<?php echo esc_attr( $forwp_social_anchor . '-' . $forwp_social_field ); ?>"><?php echo esc_html( (string) $forwp_social_spec['label'] ); ?></label>
+								<input type="password" id="<?php echo esc_attr( $forwp_social_anchor . '-' . $forwp_social_field ); ?>" name="extra[<?php echo esc_attr( $forwp_social_field ); ?>]" value="" placeholder="<?php echo esc_attr( '' !== $forwp_social_value ? __( 'Saved — leave empty to keep', '4wp-social' ) : '' ); ?>" autocomplete="new-password" spellcheck="false" />
 							<?php else : ?>
 								<label class="forwp-social-field__label" for="<?php echo esc_attr( $forwp_social_anchor . '-' . $forwp_social_field ); ?>"><?php echo esc_html( (string) $forwp_social_spec['label'] ); ?></label>
 								<input type="text" id="<?php echo esc_attr( $forwp_social_anchor . '-' . $forwp_social_field ); ?>" name="extra[<?php echo esc_attr( $forwp_social_field ); ?>]" value="<?php echo esc_attr( $forwp_social_value ); ?>" autocomplete="off" spellcheck="false" />

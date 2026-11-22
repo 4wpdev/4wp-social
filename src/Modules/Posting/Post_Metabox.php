@@ -251,6 +251,7 @@ final class Post_Metabox {
 					'notFound'     => __( 'Nothing found by title. Paste the video ID or link below.', '4wp-social' ),
 					'markedDone'   => __( 'posted', '4wp-social' ),
 					'notifySent'   => __( 'Reminder sent.', '4wp-social' ),
+					'dateSaved'    => __( 'Date saved.', '4wp-social' ),
 				),
 			)
 		);

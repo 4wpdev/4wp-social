@@ -117,6 +117,35 @@ final class Job_Repository {
 	}
 
 	/**
+	 * Whether the queue may publish this job on its own: approved in 4WP Planner
+	 * (filter forwp_social_require_approval = false turns the gate off).
+	 *
+	 * @param object $job Job row.
+	 */
+	public static function is_approved( object $job ): bool {
+		if ( ! apply_filters( 'forwp_social_require_approval', true, $job ) ) {
+			return true;
+		}
+		return ! empty( self::options( $job )['approved'] );
+	}
+
+	/**
+	 * Set or clear the approval flag in a job's options.
+	 *
+	 * @param int  $id       Job id.
+	 * @param bool $approved Approved.
+	 */
+	public function approve( int $id, bool $approved ): void {
+		$job = $this->find( $id );
+		if ( ! $job ) {
+			return;
+		}
+		$options             = self::options( $job );
+		$options['approved'] = $approved;
+		$this->update( $id, array( 'options' => (string) wp_json_encode( $options ) ) );
+	}
+
+	/**
 	 * Latest job for a post on a platform.
 	 *
 	 * @param int    $post_id  Post id.

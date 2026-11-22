@@ -67,6 +67,13 @@ final class Remote_Link {
 		$service = new Posting_Service();
 		$map     = $service->published_map( $post_id );
 
+		// Already there: a queued job would post a duplicate.
+		$jobs = new Job_Repository();
+		$job  = $jobs->latest( $post_id, $platform );
+		if ( $job && Job_Repository::QUEUED === $job->status ) {
+			$jobs->delete( (int) $job->id );
+		}
+
 		$map[ $platform ] = $row;
 		update_post_meta( $post_id, Posting_Service::PUBLISHED_META, $map );
 

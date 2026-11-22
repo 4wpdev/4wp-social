@@ -280,6 +280,8 @@ final class Admin_Menu {
 					'openUrl'       => __( 'Open URL', '4wp-social' ),
 					'format'        => __( 'Format', '4wp-social' ),
 					'icon'          => __( 'Icon', '4wp-social' ),
+					'types'         => __( 'Content types', '4wp-social' ),
+					'noTypes'       => __( 'No content types', '4wp-social' ),
 					'chooseIcon'    => __( 'Choose image', '4wp-social' ),
 					'useDefault'    => __( 'Use default', '4wp-social' ),
 					'drag'          => __( 'Drag to reorder', '4wp-social' ),
@@ -483,8 +485,13 @@ final class Admin_Menu {
 				// Declared extra fields (Pinterest board, sandbox); an unchecked checkbox saves ''.
 				$posted = isset( $_POST['extra'] ) && is_array( $_POST['extra'] ) ? map_deep( wp_unslash( $_POST['extra'] ), 'sanitize_text_field' ) : array();
 				$extra  = array();
-				foreach ( array_keys( $fields ) as $field ) {
-					$extra[ (string) $field ] = (string) ( $posted[ $field ] ?? '' );
+				foreach ( $fields as $field => $spec ) {
+					$value = (string) ( $posted[ $field ] ?? '' );
+					// A password field is never echoed back; empty keeps the saved value.
+					if ( '' === $value && 'password' === ( $spec['type'] ?? 'text' ) ) {
+						$value = Credentials_Store::extra( $platform, (string) $field );
+					}
+					$extra[ (string) $field ] = $value;
 				}
 			}
 			Credentials_Store::save(

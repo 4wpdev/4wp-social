@@ -43,6 +43,8 @@ defined( 'ABSPATH' ) || exit;
 					<?php endif; ?>
 				</span>
 				<?php if ( ! $forwp_social_done ) : ?>
+					<?php $forwp_social_run = (string) ( $forwp_social_entry['run_at'] ?? '' ); ?>
+					<input type="datetime-local" class="forwp-social-plan-when" value="<?php echo esc_attr( '' !== $forwp_social_run ? wp_date( 'Y-m-d\TH:i', (int) strtotime( $forwp_social_run ) ) : '' ); ?>" title="<?php esc_attr_e( 'Planned date on this platform (empty: post date + delay)', '4wp-social' ); ?>" aria-label="<?php esc_attr_e( 'Planned date on this platform', '4wp-social' ); ?>" />
 					<details class="forwp-social-mark-form">
 						<summary><?php esc_html_e( 'Mark as published', '4wp-social' ); ?></summary>
 						<input type="url" class="widefat forwp-social-mark-url" placeholder="<?php esc_attr_e( 'Link to the published page', '4wp-social' ); ?>" aria-label="<?php esc_attr_e( 'Link to the published page', '4wp-social' ); ?>" />
