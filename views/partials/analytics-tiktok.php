@@ -1,6 +1,6 @@
 <?php
 /**
- * TikTok panels: account, videos table (Display API gives lifetime counters only).
+ * TikTok: account tiles (go into the shared panel when connected) and lifetime videos table (shown under the panel, folded).
  *
  * @package ForWP\Social
  *
@@ -20,9 +20,30 @@ $forwp_social_mmss = static function ( $sec ): string {
 $forwp_social_tt_user   = is_array( $forwp_social_data['user'] ?? null ) ? $forwp_social_data['user'] : array();
 $forwp_social_tt_user   = isset( $forwp_social_tt_user['user'] ) ? (array) $forwp_social_tt_user['user'] + $forwp_social_tt_user : $forwp_social_tt_user;
 $forwp_social_tt_videos = (array) ( $forwp_social_data['videos']['videos'] ?? array() );
+
+// Connected: account tiles go into the shared panel's first row, the lifetime table under the panel.
+$forwp_social_in_panel = ForWP\Social\Modules\Analytics\Analytics::READY === $forwp_social_status;
+if ( $forwp_social_in_panel && ! isset( $forwp_social_tt_user['error'] ) ) {
+	$forwp_social_handle = (string) ( $forwp_social_tt_user['username'] ?? ( $forwp_social_tt_user['display_name'] ?? '' ) );
+	$forwp_social_lead   = array(
+		/* translators: %s: account name. */
+		'title' => '' !== $forwp_social_handle ? sprintf( __( 'Account @%s · all time', '4wp-social' ), $forwp_social_handle ) : __( 'Account · all time', '4wp-social' ),
+		'tiles' => array(
+			__( 'Followers', '4wp-social' ) => $forwp_social_num( $forwp_social_tt_user['follower_count'] ?? null ),
+			__( 'Likes', '4wp-social' )     => $forwp_social_num( $forwp_social_tt_user['likes_count'] ?? null ),
+			__( 'Videos', '4wp-social' )    => $forwp_social_num( $forwp_social_tt_user['video_count'] ?? null ),
+		),
+	);
+}
+if ( $forwp_social_in_panel ) {
+	ob_start();
+	echo '<details class="forwp-social-json"><summary>' . esc_html__( 'Videos · lifetime numbers', '4wp-social' ) . '</summary>';
+}
 ?>
 <div class="forwp-social-an">
-	<?php if ( isset( $forwp_social_tt_user['error'] ) ) : ?>
+	<?php if ( $forwp_social_in_panel && isset( $forwp_social_lead ) ) : ?>
+		<?php // Account tiles are rendered by the panel. ?>
+	<?php elseif ( isset( $forwp_social_tt_user['error'] ) ) : ?>
 		<p class="forwp-social-muted"><?php echo esc_html( (string) $forwp_social_tt_user['error'] ); ?></p>
 	<?php else : ?>
 		<h3 class="forwp-social-an__title">
@@ -65,7 +86,7 @@ $forwp_social_tt_videos = (array) ( $forwp_social_data['videos']['videos'] ?? ar
 			return (float) array_sum( array_map( static fn( $v ) => (float) ( ( (array) $v )[ $key ] ?? 0 ), $forwp_social_tt_videos ) );
 		};
 		$forwp_social_all  = max( 1, $forwp_social_sum( 'view_count' ) );
-		?>
+	?>
 		<h3 class="forwp-social-an__title">
 			<?php
 			/* translators: %d: number of videos. */
@@ -126,3 +147,8 @@ $forwp_social_tt_videos = (array) ( $forwp_social_data['videos']['videos'] ?? ar
 		</div>
 	<?php endif; ?>
 </div>
+<?php
+if ( $forwp_social_in_panel ) {
+	echo '</details>';
+	$forwp_social_tail = (string) ob_get_clean();
+}

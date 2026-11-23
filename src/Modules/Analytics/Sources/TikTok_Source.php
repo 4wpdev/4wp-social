@@ -1,6 +1,7 @@
 <?php
 /**
  * TikTok: account stats (user/info) and recent videos with counters (video/list).
+ * The API gives lifetime counters only: daily changes come from daily snapshots (Metrics_Store).
  *
  * @package ForWP\Social
  */
@@ -10,8 +11,10 @@ namespace ForWP\Social\Modules\Analytics\Sources;
 use ForWP\Social\Api\Http;
 use ForWP\Social\Auth\OAuth_Controller;
 use ForWP\Social\Auth\TikTok_OAuth_Provider;
+use ForWP\Social\Contracts\Analytics_Cumulative_Interface;
 use ForWP\Social\Contracts\Analytics_Source_Interface;
 use ForWP\Social\Modules\Analytics\Analytics;
+use ForWP\Social\Modules\Analytics\Metrics_Store;
 use WP_Error;
 
 defined( 'ABSPATH' ) || exit;
@@ -19,7 +22,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Needs `user.info.profile`, `user.info.stats` and `video.list` (Display API in the TikTok app), then Reconnect.
  */
-final class TikTok_Source implements Analytics_Source_Interface {
+final class TikTok_Source implements Analytics_Source_Interface, Analytics_Cumulative_Interface {
 
 	private const API          = 'https://open.tiktokapis.com/v2';
 	private const USER_FIELDS  = 'open_id,display_name,username,avatar_url,profile_deep_link,follower_count,following_count,likes_count,video_count';
@@ -51,7 +54,7 @@ final class TikTok_Source implements Analytics_Source_Interface {
 	 * {@inheritDoc}
 	 */
 	public function note(): string {
-		return __( 'Account totals and the last 100 videos with views, likes, comments and shares. Needs the user.info.profile, user.info.stats and video.list scopes (Display API) in the TikTok app, then Reconnect.', '4wp-social' );
+		return __( 'Account totals and the last 100 videos. TikTok gives lifetime counters only, so daily numbers start with the first collection. Needs the user.info.profile, user.info.stats and video.list scopes (Display API) in the TikTok app, then Reconnect.', '4wp-social' );
 	}
 
 	/**
@@ -72,6 +75,146 @@ final class TikTok_Source implements Analytics_Source_Interface {
 	}
 
 	/**
+	 * {@inheritDoc}
+	 *
+	 * @param array<string, mixed> $raw fetch() answer.
+	 */
+	public function snapshot( array $raw ): ?array {
+		$user   = is_array( $raw['user'] ?? null ) ? $raw['user'] : array();
+		$videos = is_array( $raw['videos'] ?? null ) ? $raw['videos'] : array();
+		if ( isset( $user['error'] ) || isset( $videos['error'] ) || ! $user ) {
+			return null;
+		}
+		$user = isset( $user['user'] ) ? (array) $user['user'] : $user;
+
+		$out = array(
+			'account' => array(
+				'followers' => (float) ( $user['follower_count'] ?? 0 ),
+				'videos'    => (float) ( $user['video_count'] ?? 0 ),
+			),
+			'items'   => array(),
+			'meta'    => array(),
+		);
+		foreach ( (array) ( $videos['videos'] ?? array() ) as $video ) {
+			$video = (array) $video;
+			$id    = (string) ( $video['id'] ?? '' );
+			if ( '' === $id ) {
+				continue;
+			}
+			$out['items'][ $id ] = array(
+				'views'    => (float) ( $video['view_count'] ?? 0 ),
+				'likes'    => (float) ( $video['like_count'] ?? 0 ),
+				'comments' => (float) ( $video['comment_count'] ?? 0 ),
+				'shares'   => (float) ( $video['share_count'] ?? 0 ),
+			);
+			$title               = trim( (string) ( $video['title'] ?? '' ) );
+			$title               = '' !== $title ? $title : trim( (string) strtok( (string) ( $video['video_description'] ?? '' ), "\n" ) );
+			$out['meta'][ $id ]  = array(
+				'title'        => $title,
+				'url'          => (string) ( $video['share_url'] ?? '' ),
+				'thumbnail'    => (string) ( $video['cover_image_url'] ?? '' ),
+				'duration'     => (int) ( $video['duration'] ?? 0 ),
+				'published_at' => ! empty( $video['create_time'] ) ? gmdate( 'c', (int) $video['create_time'] ) : '',
+			);
+		}
+
+		return $out;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string $start First day (Y-m-d).
+	 * @param string $end   Last day (Y-m-d).
+	 */
+	public function daily( string $start, string $end ) {
+		return Metrics_Store::rows( $this->slug(), $start, $end );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function metrics(): array {
+		return array(
+			'views'     => array(
+				'label' => __( 'Views', '4wp-social' ),
+				'agg'   => 'sum',
+				'chart' => true,
+			),
+			'likes'     => array(
+				'label' => __( 'Likes', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'comments'  => array(
+				'label' => __( 'Comments', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'shares'    => array(
+				'label' => __( 'Shares', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'followers' => array(
+				'label' => __( 'Net followers', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'videos'    => array(
+				'label' => __( 'New videos', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+		);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function history_days(): int {
+		return 1;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string $start First day (Y-m-d).
+	 * @param string $end   Last day (Y-m-d).
+	 * @param int    $limit Max videos.
+	 */
+	public function items( string $start, string $end, int $limit ) {
+		$items = Metrics_Store::cumulative_items( $this->slug(), $start, $end );
+		usort(
+			$items,
+			static function ( $a, $b ): int {
+				return ( $b['views'] ?? 0 ) <=> ( $a['views'] ?? 0 );
+			}
+		);
+
+		return array_slice( $items, 0, max( 1, $limit ) );
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function item_columns(): array {
+		return array(
+			'views'    => array(
+				'label'  => __( 'Views', '4wp-social' ),
+				'format' => 'num',
+			),
+			'likes'    => array(
+				'label'  => __( 'Likes', '4wp-social' ),
+				'format' => 'num',
+			),
+			'comments' => array(
+				'label'  => __( 'Comments', '4wp-social' ),
+				'format' => 'num',
+			),
+			'shares'   => array(
+				'label'  => __( 'Shares', '4wp-social' ),
+				'format' => 'num',
+			),
+		);
+	}
+
+	/**
 	 * Videos, newest first, 20 per page up to VIDEO_LIMIT.
 	 *
 	 * @param array<string, string> $headers Auth headers.
@@ -84,7 +227,10 @@ final class TikTok_Source implements Analytics_Source_Interface {
 			$body = array( 'max_count' => 20 ) + ( $cursor ? array( 'cursor' => $cursor ) : array() );
 			$page = $this->unwrap( Http::json( 'POST', self::API . '/video/list/?fields=' . self::VIDEO_FIELDS, $body, $headers ) );
 			if ( is_wp_error( $page ) ) {
-				return $videos ? array( 'videos' => $videos, 'error_more' => $page->get_error_message() ) : $page;
+				return $videos ? array(
+					'videos'     => $videos,
+					'error_more' => $page->get_error_message(),
+				) : $page;
 			}
 			$videos = array_merge( $videos, (array) ( $page['videos'] ?? array() ) );
 			$cursor = (int) ( $page['cursor'] ?? 0 );

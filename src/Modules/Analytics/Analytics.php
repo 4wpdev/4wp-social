@@ -7,12 +7,13 @@
 
 namespace ForWP\Social\Modules\Analytics;
 
+use ForWP\Social\Contracts\Analytics_Daily_Interface;
 use ForWP\Social\Contracts\Analytics_Import_Interface;
 use ForWP\Social\Contracts\Analytics_Source_Interface;
 use ForWP\Social\Modules\Analytics\Sources\Facebook_Source;
+use ForWP\Social\Modules\Analytics\Sources\Google_Analytics_Source;
 use ForWP\Social\Modules\Analytics\Sources\Instagram_Source;
 use ForWP\Social\Modules\Analytics\Sources\LinkedIn_Source;
-use ForWP\Social\Modules\Analytics\Sources\Planned_Source;
 use ForWP\Social\Modules\Analytics\Sources\TikTok_Source;
 use ForWP\Social\Modules\Analytics\Sources\YouTube_Source;
 use ForWP\Social\Core\Settings;
@@ -109,7 +110,7 @@ final class Analytics {
 			new TikTok_Source(),
 			new Facebook_Source(),
 			new Instagram_Source(),
-			new Planned_Source( 'analytics.google.com', __( 'Google Analytics', '4wp-social' ), __( 'GA4 Data API: site traffic next to social reach. Planned.', '4wp-social' ) ),
+			new Google_Analytics_Source(),
 			new LinkedIn_Source(),
 		);
 
@@ -194,6 +195,14 @@ final class Analytics {
 		$data = $source->fetch();
 		if ( is_wp_error( $data ) ) {
 			return $data;
+		}
+
+		// Daily rows for the panel; a failure shows next to the other parts.
+		if ( $source instanceof Analytics_Daily_Interface ) {
+			$written = Metrics_Store::collect( $slug, $source, time(), $data );
+			if ( is_wp_error( $written ) ) {
+				$data['metrics_error'] = $written->get_error_message();
+			}
 		}
 
 		// An earlier manual import stays next to the API data.

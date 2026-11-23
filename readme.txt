@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.6.2
+Stable tag: 0.7.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,14 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.7.0 =
+* Analytics: daily metrics are stored in their own table (`forwp_social_metrics`). The first run loads a year of YouTube history, then every run rewrites the last 7 days.
+* Analytics: one shared panel for all platforms — period filter (7 / 28 / 90 / 365 days, this / last month, custom) and "Fetch now" in the header, tiles with change vs the previous period, chart with tooltips, click a day for its top 5, sortable table (newest first by default).
+* Account totals and period totals in one row; clicking a day shows its stats, then its top 5. Each video row links to its page on the site (post type icon + path).
+* LinkedIn: upload the Aggregate analytics .xlsx export — impressions, engagements and new followers by day, posts, audience demographics. Each file adds its days.
+* Google Analytics (GA4): page views, users, sessions and engagement by day, top pages, traffic channels and sources. Needs the analytics.readonly scope (Reconnect Google) and the GA4 Property ID.
+* YouTube, TikTok, Facebook and Instagram on the panel. Instagram: reach by day (the only daily series Instagram gives), posts per period from daily snapshots. Facebook: Page insights by day (views, engagements, new follows; needs read_insights), Reels per period from daily snapshots. TikTok gives lifetime counters only: the plugin stores a daily snapshot and shows the change, so TikTok history starts with the first collection. REST `forwp-social/v1/analytics/items` (items of a period, cached for a day).
 
 = 0.6.2 =
 * Pinterest: "Sandbox access token" field. With "post to the sandbox" on, pins, media and boards use this token (the OAuth token is rejected by the sandbox).

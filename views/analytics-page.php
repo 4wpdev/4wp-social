@@ -1,6 +1,6 @@
 <?php
 /**
- * Analytics: one card per source, "Fetch now", last raw snapshot as JSON.
+ * Analytics: platform tabs, shared header (period + "Fetch now"), one card per source, last raw snapshot as JSON.
  *
  * @package ForWP\Social
  *
@@ -11,8 +11,11 @@
  */
 
 use ForWP\Social\Admin\Admin_Menu;
+use ForWP\Social\Contracts\Analytics_Daily_Interface;
 use ForWP\Social\Contracts\Analytics_Import_Interface;
 use ForWP\Social\Modules\Analytics\Analytics;
+use ForWP\Social\Modules\Analytics\Metrics_Store;
+use ForWP\Social\Modules\Analytics\Sources\Google_Analytics_Source;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -68,17 +71,76 @@ $forwp_social_labels  = array(
 		$forwp_social_current = (string) array_key_first( $sources );
 	}
 	$forwp_social_partials = array(
-		'youtube.com'   => 'analytics-youtube.php',
-		'tiktok.com'    => 'analytics-tiktok.php',
-		'instagram.com' => 'analytics-instagram.php',
-		'facebook.com'  => 'analytics-facebook.php',
+		'youtube.com'          => 'analytics-youtube.php',
+		'tiktok.com'           => 'analytics-tiktok.php',
+		'instagram.com'        => 'analytics-instagram.php',
+		'facebook.com'         => 'analytics-facebook.php',
+		'analytics.google.com' => 'analytics-google.php',
+		'linkedin.com'         => 'analytics-linkedin.php',
 	);
 	?>
-	<nav class="nav-tab-wrapper forwp-social-tabs" aria-label="<?php esc_attr_e( 'Analytics platforms', '4wp-social' ); ?>">
-		<?php foreach ( $sources as $forwp_social_slug => $forwp_social_source ) : ?>
-			<a href="<?php echo esc_url( Admin_Menu::analytics_url( array( 'source' => $forwp_social_slug ) ) ); ?>" class="nav-tab<?php echo $forwp_social_current === $forwp_social_slug ? ' nav-tab-active' : ''; ?>"><?php echo esc_html( $forwp_social_source->label() ); ?></a>
-		<?php endforeach; ?>
-	</nav>
+	<?php
+	// phpcs:disable WordPress.Security.NonceVerification.Recommended -- Read-only view state.
+	$forwp_social_range = Metrics_Store::resolve_range(
+		isset( $_GET['range'] ) ? sanitize_key( wp_unslash( $_GET['range'] ) ) : Metrics_Store::DEFAULT_PRESET,
+		isset( $_GET['from'] ) ? sanitize_text_field( wp_unslash( $_GET['from'] ) ) : '',
+		isset( $_GET['to'] ) ? sanitize_text_field( wp_unslash( $_GET['to'] ) ) : '',
+		time()
+	);
+	// phpcs:enable
+	$forwp_social_cur_src    = $sources[ $forwp_social_current ];
+	$forwp_social_presets    = array(
+		'7d'         => __( 'Last 7 days', '4wp-social' ),
+		'28d'        => __( 'Last 28 days', '4wp-social' ),
+		'90d'        => __( 'Last 90 days', '4wp-social' ),
+		'365d'       => __( 'Last 365 days', '4wp-social' ),
+		'month'      => __( 'This month', '4wp-social' ),
+		'prev_month' => __( 'Last month', '4wp-social' ),
+		'custom'     => __( 'Custom…', '4wp-social' ),
+	);
+	$forwp_social_range_args = array( 'range' => $forwp_social_range['preset'] );
+	if ( 'custom' === $forwp_social_range['preset'] ) {
+		$forwp_social_range_args['from'] = $forwp_social_range['start'];
+		$forwp_social_range_args['to']   = $forwp_social_range['end'];
+	}
+	?>
+	<div class="forwp-social-an-head">
+		<nav class="nav-tab-wrapper forwp-social-tabs forwp-social-an-head__tabs" aria-label="<?php esc_attr_e( 'Analytics platforms', '4wp-social' ); ?>">
+			<?php foreach ( $sources as $forwp_social_slug => $forwp_social_source ) : ?>
+				<a href="<?php echo esc_url( Admin_Menu::analytics_url( array_merge( $forwp_social_range_args, array( 'source' => $forwp_social_slug ) ) ) ); ?>" class="nav-tab<?php echo $forwp_social_current === $forwp_social_slug ? ' nav-tab-active' : ''; ?>"><?php echo esc_html( $forwp_social_source->label() ); ?></a>
+			<?php endforeach; ?>
+		</nav>
+		<div class="forwp-social-an-head__tools">
+			<?php if ( $forwp_social_cur_src instanceof Analytics_Daily_Interface ) : ?>
+				<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>" class="forwp-social-an-range">
+					<input type="hidden" name="page" value="<?php echo esc_attr( Admin_Menu::ANALYTICS_SLUG ); ?>" />
+					<input type="hidden" name="source" value="<?php echo esc_attr( $forwp_social_current ); ?>" />
+					<label class="screen-reader-text" for="forwp-social-range"><?php esc_html_e( 'Period', '4wp-social' ); ?></label>
+					<select name="range" id="forwp-social-range">
+						<?php foreach ( $forwp_social_presets as $forwp_social_key => $forwp_social_label ) : ?>
+							<option value="<?php echo esc_attr( $forwp_social_key ); ?>" <?php selected( $forwp_social_range['preset'], $forwp_social_key ); ?>><?php echo esc_html( $forwp_social_label ); ?></option>
+						<?php endforeach; ?>
+					</select>
+					<span class="forwp-social-an-range__custom"<?php echo 'custom' === $forwp_social_range['preset'] ? '' : ' hidden'; ?>>
+						<input type="date" name="from" value="<?php echo esc_attr( $forwp_social_range['start'] ); ?>" aria-label="<?php esc_attr_e( 'From', '4wp-social' ); ?>" />
+						<input type="date" name="to" value="<?php echo esc_attr( $forwp_social_range['end'] ); ?>" aria-label="<?php esc_attr_e( 'To', '4wp-social' ); ?>" />
+						<button type="submit" class="button"><?php esc_html_e( 'Apply', '4wp-social' ); ?></button>
+					</span>
+				</form>
+			<?php endif; ?>
+			<?php if ( Analytics::READY === $forwp_social_cur_src->status() ) : ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="<?php echo esc_attr( $forwp_social_action ); ?>" />
+					<input type="hidden" name="source" value="<?php echo esc_attr( $forwp_social_current ); ?>" />
+					<?php foreach ( $forwp_social_range_args as $forwp_social_key => $forwp_social_value ) : ?>
+						<input type="hidden" name="<?php echo esc_attr( $forwp_social_key ); ?>" value="<?php echo esc_attr( $forwp_social_value ); ?>" />
+					<?php endforeach; ?>
+					<?php wp_nonce_field( $forwp_social_action . '_' . $forwp_social_current ); ?>
+					<button type="submit" class="button button-primary"><?php esc_html_e( 'Fetch now', '4wp-social' ); ?></button>
+				</form>
+			<?php endif; ?>
+		</div>
+	</div>
 
 	<div class="forwp-social-analytics forwp-social-analytics--single">
 		<?php foreach ( array( $forwp_social_current => $sources[ $forwp_social_current ] ) as $forwp_social_slug => $forwp_social_source ) : ?>
@@ -93,15 +155,19 @@ $forwp_social_labels  = array(
 				</h2>
 				<p class="description"><?php echo esc_html( $forwp_social_source->note() ); ?></p>
 
-				<?php if ( Analytics::READY === $forwp_social_status ) : ?>
-					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-						<input type="hidden" name="action" value="<?php echo esc_attr( $forwp_social_action ); ?>" />
-						<input type="hidden" name="source" value="<?php echo esc_attr( $forwp_social_slug ); ?>" />
-						<?php wp_nonce_field( $forwp_social_action . '_' . $forwp_social_slug ); ?>
-						<button type="submit" class="button"><?php esc_html_e( 'Fetch now', '4wp-social' ); ?></button>
-					</form>
-				<?php elseif ( Analytics::NOT_CONNECTED === $forwp_social_status ) : ?>
+				<?php if ( Analytics::NOT_CONNECTED === $forwp_social_status ) : ?>
 					<p><a href="<?php echo esc_url( Admin_Menu::tab_url( 'accounts' ) ); ?>"><?php esc_html_e( 'Connect the account', '4wp-social' ); ?></a></p>
+				<?php endif; ?>
+
+				<?php if ( $forwp_social_source instanceof Google_Analytics_Source ) : ?>
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="forwp-social-an-ga4">
+						<input type="hidden" name="action" value="<?php echo esc_attr( Admin_Menu::actions()['save_ga4'] ); ?>" />
+						<?php wp_nonce_field( Admin_Menu::actions()['save_ga4'] ); ?>
+						<label for="forwp-social-ga4"><?php esc_html_e( 'GA4 Property ID', '4wp-social' ); ?></label>
+						<input type="text" id="forwp-social-ga4" name="property" inputmode="numeric" pattern="[0-9]*" class="regular-text" value="<?php echo esc_attr( Google_Analytics_Source::property() ); ?>" placeholder="123456789" />
+						<button type="submit" class="button"><?php esc_html_e( 'Save', '4wp-social' ); ?></button>
+						<span class="description"><?php esc_html_e( 'Google Analytics → Admin → Property details → Property ID.', '4wp-social' ); ?></span>
+					</form>
 				<?php endif; ?>
 
 				<?php if ( $forwp_social_source instanceof Analytics_Import_Interface ) : ?>
@@ -115,10 +181,16 @@ $forwp_social_labels  = array(
 				<?php endif; ?>
 
 				<?php
+				$forwp_social_lead = null; // Account tiles a partial hands to the shared panel.
+				$forwp_social_tail = ''; // Partial HTML shown under the panel.
 				if ( $forwp_social_snap && isset( $forwp_social_partials[ $forwp_social_slug ] ) ) {
 					$forwp_social_data = (array) $forwp_social_snap['data'];
 					include FORWP_SOCIAL_PATH . 'views/partials/' . $forwp_social_partials[ $forwp_social_slug ];
 				}
+				if ( $forwp_social_source instanceof Analytics_Daily_Interface && in_array( $forwp_social_status, array( Analytics::READY, Analytics::MANUAL ), true ) ) {
+					include FORWP_SOCIAL_PATH . 'views/partials/analytics-panel.php';
+				}
+				echo $forwp_social_tail; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped in the partial.
 				?>
 
 				<?php if ( $forwp_social_snap ) : ?>

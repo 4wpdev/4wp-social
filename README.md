@@ -54,6 +54,10 @@ src/
 | `forwp_social_status_post_types`, `forwp_social_calendar_events`, `forwp_social_calendar_site_post_types` | filter |
 | `forwp_social_package_imported`, `forwp_social_published`, `forwp_social_failed` | action |
 
+## Analytics
+
+Sources implementing `Analytics_Daily_Interface` write daily totals to `{prefix}forwp_social_metrics` (cron + "Fetch now") and get the shared panel: period filter, tiles with change vs the previous period, daily chart (tooltip, top 5 of a day), sortable items table. REST: `GET forwp-social/v1/analytics/items?source=&start=&end=&limit=`. See `docs/decisions/0006-analytics-daily-store.md`.
+
 ## Documentation
 
 | File | Content |

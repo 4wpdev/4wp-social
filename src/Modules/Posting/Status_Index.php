@@ -35,6 +35,30 @@ final class Status_Index {
 	}
 
 	/**
+	 * Site posts by remote id of one platform (analytics: video → page on the site).
+	 *
+	 * @param string $platform Platform slug.
+	 * @return array<string, int> Remote id => post id.
+	 */
+	public static function posts_by_remote( string $platform ): array {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- One read per page view.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = %s", self::META ) );
+
+		$out = array();
+		foreach ( (array) $rows as $row ) {
+			$index = maybe_unserialize( $row->meta_value );
+			$id    = is_array( $index ) ? (string) ( $index[ $platform ]['remote_id'] ?? '' ) : '';
+			if ( '' !== $id && 'publish' === get_post_status( (int) $row->post_id ) ) {
+				$out[ $id ] = (int) $row->post_id;
+			}
+		}
+
+		return $out;
+	}
+
+	/**
 	 * Merge fields into one platform. Empty url / remote_id never erase known ones.
 	 *
 	 * @param int                   $post_id  Post id.

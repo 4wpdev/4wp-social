@@ -1,6 +1,6 @@
 <?php
 /**
- * Database schema: publishing queue and log.
+ * Database schema: publishing queue, log, daily analytics metrics.
  *
  * @package ForWP\Social
  */
@@ -22,7 +22,7 @@ final class Schema {
 	/**
 	 * Bump when custom tables change so existing installs run dbDelta.
 	 */
-	public const DB_VERSION = 2;
+	public const DB_VERSION = 3;
 
 	public const DB_VERSION_OPTION = 'forwp_social_db_version';
 
@@ -47,6 +47,7 @@ final class Schema {
 		}
 
 		self::create_jobs_table();
+		self::create_metrics_table();
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION, false );
 	}
 
@@ -84,6 +85,18 @@ final class Schema {
 
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
+	}
+
+	/**
+	 * Daily analytics metrics table.
+	 *
+	 * @return void
+	 */
+	public static function create_metrics_table(): void {
+		global $wpdb;
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( \ForWP\Social\Modules\Analytics\Metrics_Store::schema( $wpdb->get_charset_collate() ) );
 	}
 
 	/**

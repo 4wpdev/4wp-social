@@ -1,6 +1,6 @@
 <?php
 /**
- * YouTube: channel statistics (Data API) and daily report (YouTube Analytics API v2).
+ * YouTube: channel statistics (Data API), daily report and per-video report (YouTube Analytics API v2).
  *
  * @package ForWP\Social
  */
@@ -10,6 +10,7 @@ namespace ForWP\Social\Modules\Analytics\Sources;
 use ForWP\Social\Api\Http;
 use ForWP\Social\Auth\Google_OAuth_Provider;
 use ForWP\Social\Auth\OAuth_Controller;
+use ForWP\Social\Contracts\Analytics_Daily_Interface;
 use ForWP\Social\Contracts\Analytics_Source_Interface;
 use ForWP\Social\Modules\Analytics\Analytics;
 use WP_Error;
@@ -19,12 +20,12 @@ defined( 'ABSPATH' ) || exit;
 /**
  * Needs `youtube.force-ssl` (channel) and `yt-analytics.readonly` (report).
  */
-final class YouTube_Source implements Analytics_Source_Interface {
+final class YouTube_Source implements Analytics_Source_Interface, Analytics_Daily_Interface {
 
 	private const DATA_API      = 'https://www.googleapis.com/youtube/v3';
 	private const ANALYTICS_API = 'https://youtubeanalytics.googleapis.com/v2/reports';
 	private const METRICS       = 'views,estimatedMinutesWatched,averageViewDuration,likes,comments,shares,subscribersGained,subscribersLost';
-	private const DAYS          = 28;
+	private const HISTORY_DAYS  = 365;
 	private const VIDEO_METRICS = 'views,estimatedMinutesWatched,averageViewDuration,likes,comments,subscribersGained';
 	private const VIDEO_LIMIT   = 200;
 
@@ -53,7 +54,7 @@ final class YouTube_Source implements Analytics_Source_Interface {
 	 * {@inheritDoc}
 	 */
 	public function note(): string {
-		return __( 'Channel totals, a 28-day daily report and views per video. The report needs the yt-analytics.readonly scope: add it in Google Cloud → Data Access, then Reconnect.', '4wp-social' );
+		return __( 'Channel totals, daily report and views per video for the chosen period. The report needs the yt-analytics.readonly scope: add it in Google Cloud → Data Access, then Reconnect.', '4wp-social' );
 	}
 
 	/**
@@ -65,27 +66,169 @@ final class YouTube_Source implements Analytics_Source_Interface {
 			return $token;
 		}
 
-		list( $start, $end ) = Analytics::range( self::DAYS, time() );
-
+		// Daily rows and videos are loaded by the panel (Metrics_Store), the snapshot keeps channel totals.
 		return array(
 			'channel' => Analytics::part( $this->get( self::DATA_API . '/channels?part=snippet,statistics&mine=true', $token ) ),
-			'daily'   => Analytics::part(
-				$this->get(
-					add_query_arg(
-						array(
-							'ids'        => 'channel==MINE',
-							'startDate'  => $start,
-							'endDate'    => $end,
-							'metrics'    => self::METRICS,
-							'dimensions' => 'day',
-							'sort'       => 'day',
-						),
-						self::ANALYTICS_API
-					),
-					$token
-				)
+		);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string $start First day (Y-m-d).
+	 * @param string $end   Last day (Y-m-d).
+	 */
+	public function daily( string $start, string $end ) {
+		$token = OAuth_Controller::instance()->get_access_token( $this->slug() );
+		if ( is_wp_error( $token ) ) {
+			return $token;
+		}
+
+		$report = $this->get(
+			add_query_arg(
+				array(
+					'ids'        => 'channel==MINE',
+					'startDate'  => $start,
+					'endDate'    => $end,
+					'metrics'    => self::METRICS,
+					'dimensions' => 'day',
+					'sort'       => 'day',
+				),
+				self::ANALYTICS_API
 			),
-			'videos'  => Analytics::part( $this->videos( $start, $end, $token ) ),
+			$token
+		);
+		if ( is_wp_error( $report ) ) {
+			return $report;
+		}
+
+		return self::daily_rows( $report );
+	}
+
+	/**
+	 * Report (columnHeaders + rows) → day => metrics, with net subscribers.
+	 *
+	 * @param array<string, mixed> $report Analytics API answer.
+	 * @return array<string, array<string, float>>
+	 */
+	public static function daily_rows( array $report ): array {
+		$cols = array();
+		foreach ( (array) ( $report['columnHeaders'] ?? array() ) as $i => $col ) {
+			$cols[ (string) ( $col['name'] ?? $i ) ] = $i;
+		}
+
+		$out = array();
+		foreach ( (array) ( $report['rows'] ?? array() ) as $raw ) {
+			$day = (string) ( $raw[ $cols['day'] ?? 0 ] ?? '' );
+			if ( '' === $day ) {
+				continue;
+			}
+			$row = array();
+			foreach ( $cols as $name => $i ) {
+				if ( 'day' !== $name ) {
+					$row[ $name ] = (float) ( $raw[ $i ] ?? 0 );
+				}
+			}
+			$row['subscribersNet'] = ( $row['subscribersGained'] ?? 0 ) - ( $row['subscribersLost'] ?? 0 );
+			$out[ $day ]           = $row;
+		}
+
+		return $out;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function metrics(): array {
+		return array(
+			'views'                   => array(
+				'label' => __( 'Views', '4wp-social' ),
+				'agg'   => 'sum',
+				'chart' => true,
+			),
+			'estimatedMinutesWatched' => array(
+				'label' => __( 'Minutes watched', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'averageViewDuration'     => array(
+				'label'  => __( 'Avg view duration', '4wp-social' ),
+				'agg'    => 'avg',
+				'weight' => 'views',
+				'format' => 'time',
+			),
+			'likes'                   => array(
+				'label' => __( 'Likes', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'comments'                => array(
+				'label' => __( 'Comments', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'shares'                  => array(
+				'label' => __( 'Shares', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+			'subscribersNet'          => array(
+				'label' => __( 'Net subscribers', '4wp-social' ),
+				'agg'   => 'sum',
+			),
+		);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function history_days(): int {
+		return self::HISTORY_DAYS;
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * @param string $start First day (Y-m-d).
+	 * @param string $end   Last day (Y-m-d).
+	 * @param int    $limit Max videos.
+	 */
+	public function items( string $start, string $end, int $limit ) {
+		$token = OAuth_Controller::instance()->get_access_token( $this->slug() );
+		if ( is_wp_error( $token ) ) {
+			return $token;
+		}
+
+		$videos = $this->videos( $start, $end, $token, max( 1, min( self::VIDEO_LIMIT, $limit ) ) );
+
+		return is_wp_error( $videos ) ? $videos : $videos['rows'];
+	}
+
+	/**
+	 * {@inheritDoc}
+	 */
+	public function item_columns(): array {
+		return array(
+			'views'                   => array(
+				'label'  => __( 'Views', '4wp-social' ),
+				'format' => 'num',
+			),
+			'estimatedMinutesWatched' => array(
+				'label'  => __( 'Watch time (h)', '4wp-social' ),
+				'format' => 'hours',
+			),
+			'averageViewDuration'     => array(
+				'label'  => __( 'Avg view', '4wp-social' ),
+				'format' => 'time',
+			),
+			'likes'                   => array(
+				'label'  => __( 'Likes', '4wp-social' ),
+				'format' => 'num',
+			),
+			'comments'                => array(
+				'label'  => __( 'Comments', '4wp-social' ),
+				'format' => 'num',
+			),
+			'subscribersGained'       => array(
+				'label'  => __( 'Subscribers', '4wp-social' ),
+				'format' => 'num',
+			),
 		);
 	}
 
@@ -95,9 +238,10 @@ final class YouTube_Source implements Analytics_Source_Interface {
 	 * @param string $start Start date (Y-m-d).
 	 * @param string $end   End date (Y-m-d).
 	 * @param string $token Access token.
+	 * @param int    $limit Max videos.
 	 * @return array{start: string, end: string, rows: array<int, array<string, mixed>>}|WP_Error
 	 */
-	private function videos( string $start, string $end, string $token ) {
+	private function videos( string $start, string $end, string $token, int $limit = self::VIDEO_LIMIT ) {
 		$report = $this->get(
 			add_query_arg(
 				array(
@@ -107,7 +251,7 @@ final class YouTube_Source implements Analytics_Source_Interface {
 					'metrics'    => self::VIDEO_METRICS,
 					'dimensions' => 'video',
 					'sort'       => '-views',
-					'maxResults' => self::VIDEO_LIMIT,
+					'maxResults' => $limit,
 				),
 				self::ANALYTICS_API
 			),
@@ -128,7 +272,10 @@ final class YouTube_Source implements Analytics_Source_Interface {
 			if ( '' === $id ) {
 				continue;
 			}
-			$row = array( 'id' => $id );
+			$row = array(
+				'id'  => $id,
+				'url' => 'https://www.youtube.com/watch?v=' . rawurlencode( $id ),
+			);
 			foreach ( explode( ',', self::VIDEO_METRICS ) as $metric ) {
 				$row[ $metric ] = isset( $cols[ $metric ] ) ? (float) ( $raw[ $cols[ $metric ] ] ?? 0 ) : 0.0;
 			}
@@ -146,7 +293,7 @@ final class YouTube_Source implements Analytics_Source_Interface {
 				if ( ! isset( $rows[ $id ] ) ) {
 					continue;
 				}
-				$thumbs                    = (array) ( $item['snippet']['thumbnails'] ?? array() );
+				$thumbs                      = (array) ( $item['snippet']['thumbnails'] ?? array() );
 				$rows[ $id ]['title']        = (string) ( $item['snippet']['title'] ?? '' );
 				$rows[ $id ]['published_at'] = (string) ( $item['snippet']['publishedAt'] ?? '' );
 				$rows[ $id ]['thumbnail']    = (string) ( $thumbs['default']['url'] ?? $thumbs['medium']['url'] ?? '' );

@@ -1,10 +1,10 @@
 <?php
 /**
- * Facebook panels: Page, 28-day insights, views by day, Reels table.
+ * Facebook: Page tiles (go into the shared panel when connected) and lifetime Reels table (shown under the panel, folded).
  *
  * @package ForWP\Social
  *
- * @var array<string, mixed> $forwp_social_data Snapshot data: { page, insights, reels }.
+ * @var array<string, mixed> $forwp_social_data Snapshot data: { page, reels }.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -17,28 +17,37 @@ $forwp_social_mmss = static function ( $sec ): string {
 	return $sec >= 3600 ? gmdate( 'G:i:s', $sec ) : gmdate( 'i:s', $sec );
 };
 
-$forwp_social_fb_page = is_array( $forwp_social_data['page'] ?? null ) ? $forwp_social_data['page'] : array();
-
-// Insights by day: name => [ Y-m-d => value ]; totals = sum over the period.
-$forwp_social_fb_series = array();
-foreach ( (array) ( $forwp_social_data['insights']['data'] ?? array() ) as $forwp_social_m ) {
-	$forwp_social_name = (string) ( $forwp_social_m['name'] ?? '' );
-	foreach ( (array) ( $forwp_social_m['values'] ?? array() ) as $forwp_social_v ) {
-		$forwp_social_day = substr( (string) ( $forwp_social_v['end_time'] ?? '' ), 0, 10 );
-		if ( '' !== $forwp_social_day && is_numeric( $forwp_social_v['value'] ?? null ) ) {
-			$forwp_social_fb_series[ $forwp_social_name ][ $forwp_social_day ] = (float) $forwp_social_v['value'];
-		}
-	}
-}
-$forwp_social_fb_total = static function ( string $name ) use ( $forwp_social_fb_series ) {
-	return isset( $forwp_social_fb_series[ $name ] ) ? array_sum( $forwp_social_fb_series[ $name ] ) : null;
-};
-$forwp_social_fb_daily = $forwp_social_fb_series['page_media_view'] ?? array();
-
+$forwp_social_fb_page  = is_array( $forwp_social_data['page'] ?? null ) ? $forwp_social_data['page'] : array();
 $forwp_social_fb_reels = (array) ( $forwp_social_data['reels']['data'] ?? array() );
+
+// Connected: Page tiles go into the shared panel's first row, the lifetime table under the panel.
+$forwp_social_in_panel = ForWP\Social\Modules\Analytics\Analytics::READY === $forwp_social_status;
+if ( $forwp_social_in_panel && ! isset( $forwp_social_fb_page['error'] ) ) {
+	$forwp_social_name = (string) ( $forwp_social_fb_page['name'] ?? '' );
+	$forwp_social_lead = array(
+		/* translators: %s: Page name. */
+		'title' => '' !== $forwp_social_name ? sprintf( __( 'Page %s · all time', '4wp-social' ), $forwp_social_name ) : __( 'Page · all time', '4wp-social' ),
+		'tiles' => array(
+			__( 'Followers', '4wp-social' ) => $forwp_social_num( $forwp_social_fb_page['followers_count'] ?? null ),
+			__( 'Likes', '4wp-social' )     => $forwp_social_num( $forwp_social_fb_page['fan_count'] ?? null ),
+			__( 'Reels', '4wp-social' )     => $forwp_social_num( count( $forwp_social_fb_reels ) ),
+		),
+	);
+}
+if ( $forwp_social_in_panel ) {
+	if ( ! empty( $forwp_social_data['metrics_error'] ) ) {
+		echo '<p class="forwp-social-muted">' . esc_html( (string) $forwp_social_data['metrics_error'] ) . '</p>';
+	} elseif ( ! empty( $forwp_social_data['reels']['insights_error'] ) ) {
+		echo '<p class="forwp-social-muted">' . esc_html__( 'Page insights by day need the read_insights permission: add it to the Facebook Login configuration and reconnect.', '4wp-social' ) . '</p>';
+	}
+	ob_start();
+	echo '<details class="forwp-social-json"><summary>' . esc_html__( 'Reels · lifetime numbers', '4wp-social' ) . '</summary>';
+}
 ?>
 <div class="forwp-social-an">
-	<?php if ( isset( $forwp_social_fb_page['error'] ) ) : ?>
+	<?php if ( $forwp_social_in_panel && isset( $forwp_social_lead ) ) : ?>
+		<?php // Page tiles are rendered by the panel. ?>
+	<?php elseif ( isset( $forwp_social_fb_page['error'] ) ) : ?>
 		<p class="forwp-social-muted"><?php echo esc_html( (string) $forwp_social_fb_page['error'] ); ?></p>
 	<?php else : ?>
 		<h3 class="forwp-social-an__title">
@@ -63,47 +72,6 @@ $forwp_social_fb_reels = (array) ( $forwp_social_data['reels']['data'] ?? array(
 		</div>
 	<?php endif; ?>
 
-	<?php if ( isset( $forwp_social_data['insights']['error'] ) ) : ?>
-		<p class="forwp-social-muted"><?php echo esc_html( (string) $forwp_social_data['insights']['error'] ); ?></p>
-	<?php elseif ( ! $forwp_social_fb_series ) : ?>
-		<p class="forwp-social-muted"><?php esc_html_e( 'Page insights: no data. Meta returns them only with the read_insights permission (add it to the Facebook Login configuration and reconnect).', '4wp-social' ); ?></p>
-	<?php else : ?>
-		<h3 class="forwp-social-an__title"><?php esc_html_e( 'Last 28 days', '4wp-social' ); ?></h3>
-		<div class="forwp-social-an__tiles">
-			<?php
-			foreach ( array(
-				__( 'Views', '4wp-social' )          => $forwp_social_fb_total( 'page_media_view' ),
-				__( 'Engagements', '4wp-social' )    => $forwp_social_fb_total( 'page_post_engagements' ),
-				__( 'New follows', '4wp-social' )    => $forwp_social_fb_total( 'page_follows' ),
-				__( 'Unique follows', '4wp-social' ) => $forwp_social_fb_total( 'page_daily_follows_unique' ),
-			) as $forwp_social_label => $forwp_social_value ) :
-				?>
-				<div class="forwp-social-an__tile"><strong><?php echo esc_html( $forwp_social_num( $forwp_social_value ) ); ?></strong><span><?php echo esc_html( $forwp_social_label ); ?></span></div>
-			<?php endforeach; ?>
-		</div>
-	<?php endif; ?>
-
-	<?php if ( $forwp_social_fb_daily ) : ?>
-		<?php
-		$forwp_social_days = array_keys( $forwp_social_fb_daily );
-		$forwp_social_max  = max( 1, max( $forwp_social_fb_daily ) );
-		$forwp_social_w    = 100 / count( $forwp_social_fb_daily );
-		?>
-		<h3 class="forwp-social-an__title"><?php esc_html_e( 'Views by day', '4wp-social' ); ?></h3>
-		<svg class="forwp-social-an__chart" viewBox="0 0 100 40" preserveAspectRatio="none" role="img" aria-label="<?php esc_attr_e( 'Views by day', '4wp-social' ); ?>">
-			<?php
-			$forwp_social_i = 0;
-			foreach ( $forwp_social_fb_daily as $forwp_social_day => $forwp_social_value ) :
-				$forwp_social_h = 38 * ( $forwp_social_value / $forwp_social_max );
-				?>
-				<rect x="<?php echo esc_attr( (string) ( $forwp_social_i * $forwp_social_w + $forwp_social_w * 0.15 ) ); ?>" y="<?php echo esc_attr( (string) ( 40 - $forwp_social_h ) ); ?>" width="<?php echo esc_attr( (string) ( $forwp_social_w * 0.7 ) ); ?>" height="<?php echo esc_attr( (string) $forwp_social_h ); ?>"><title><?php echo esc_html( $forwp_social_day . ': ' . number_format_i18n( $forwp_social_value ) ); ?></title></rect>
-				<?php
-				++$forwp_social_i;
-			endforeach;
-			?>
-		</svg>
-		<div class="forwp-social-an__axis"><span><?php echo esc_html( (string) reset( $forwp_social_days ) ); ?></span><span><?php echo esc_html( 'max ' . number_format_i18n( $forwp_social_max ) ); ?></span><span><?php echo esc_html( (string) end( $forwp_social_days ) ); ?></span></div>
-	<?php endif; ?>
 
 	<?php if ( isset( $forwp_social_data['reels']['error'] ) ) : ?>
 		<p class="forwp-social-muted"><?php echo esc_html( (string) $forwp_social_data['reels']['error'] ); ?></p>
@@ -130,7 +98,7 @@ $forwp_social_fb_reels = (array) ( $forwp_social_data['reels']['data'] ?? array(
 			}
 			return $total;
 		};
-		?>
+	?>
 		<h3 class="forwp-social-an__title">
 			<?php
 			/* translators: %d: number of reels. */
@@ -193,3 +161,8 @@ $forwp_social_fb_reels = (array) ( $forwp_social_data['reels']['data'] ?? array(
 		</div>
 	<?php endif; ?>
 </div>
+<?php
+if ( $forwp_social_in_panel ) {
+	echo '</details>';
+	$forwp_social_tail = (string) ob_get_clean();
+}

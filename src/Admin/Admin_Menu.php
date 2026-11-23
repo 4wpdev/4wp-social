@@ -12,6 +12,7 @@ use ForWP\Social\Auth\OAuth_Controller;
 use ForWP\Social\Core\Module_Registry;
 use ForWP\Social\Core\Settings;
 use ForWP\Social\Modules\Analytics\Analytics;
+use ForWP\Social\Modules\Analytics\Sources\Google_Analytics_Source;
 use ForWP\Social\Modules\Posting\Adapter_Registry;
 use ForWP\Social\Modules\Posting\Calendar;
 use ForWP\Social\Modules\Posting\Job_Repository;
@@ -44,6 +45,7 @@ final class Admin_Menu {
 	private const SAVE_REDIRECT    = 'forwp_social_save_redirect';
 	private const FETCH_ANALYTICS  = 'forwp_social_fetch_analytics';
 	private const IMPORT_ANALYTICS = 'forwp_social_import_analytics';
+	private const SAVE_GA4         = 'forwp_social_save_ga4';
 
 	/**
 	 * @var self|null
@@ -74,6 +76,7 @@ final class Admin_Menu {
 		add_action( 'admin_post_' . self::SAVE_REDIRECT, array( $this, 'handle_save_redirect' ) );
 		add_action( 'admin_post_' . self::FETCH_ANALYTICS, array( $this, 'handle_fetch_analytics' ) );
 		add_action( 'admin_post_' . self::IMPORT_ANALYTICS, array( $this, 'handle_import_analytics' ) );
+		add_action( 'admin_post_' . self::SAVE_GA4, array( $this, 'handle_save_ga4' ) );
 		add_action( 'admin_init', array( $this, 'redirect_legacy' ) );
 		add_filter( 'parent_file', array( $this, 'highlight_parent' ) );
 		add_filter( 'submenu_file', array( $this, 'highlight_settings' ) );
@@ -220,7 +223,30 @@ final class Admin_Menu {
 			? array( 'forwp_social_error' => $result->get_error_message() )
 			: array( 'forwp_social_notice' => 'analytics_fetched' );
 
+		// Keep the chosen period after the redirect.
+		foreach ( array( 'range', 'from', 'to' ) as $key ) {
+			if ( isset( $_POST[ $key ] ) ) {
+				$args[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) );
+			}
+		}
+
 		wp_safe_redirect( self::analytics_url( array_merge( $args, array( 'source' => $source ) ) ) );
+		exit;
+	}
+
+	/**
+	 * Save the GA4 Property ID (digits only).
+	 *
+	 * @return void
+	 */
+	public function handle_save_ga4(): void {
+		check_admin_referer( self::SAVE_GA4 );
+		$this->require_admin();
+
+		$id = isset( $_POST['property'] ) ? preg_replace( '/\D/', '', sanitize_text_field( wp_unslash( $_POST['property'] ) ) ) : '';
+		update_option( Google_Analytics_Source::PROPERTY_OPTION, $id, false );
+
+		wp_safe_redirect( self::analytics_url( array( 'source' => 'analytics.google.com', 'forwp_social_notice' => 'saved' ) ) );
 		exit;
 	}
 
@@ -240,6 +266,22 @@ final class Admin_Menu {
 
 		if ( false !== strpos( $hook_suffix, self::PLATFORMS_SLUG ) ) {
 			$this->enqueue_platforms();
+		}
+		if ( false !== strpos( $hook_suffix, self::ANALYTICS_SLUG ) ) {
+			$an_js = FORWP_SOCIAL_PATH . 'assets/analytics.js';
+			wp_enqueue_script( 'forwp-social-analytics', FORWP_SOCIAL_URL . 'assets/analytics.js', array( 'wp-api-fetch' ), is_readable( $an_js ) ? (string) filemtime( $an_js ) : FORWP_SOCIAL_VERSION, true );
+			wp_localize_script(
+				'forwp-social-analytics',
+				'forwpSocialAnalytics',
+				array(
+					'i18n' => array(
+						'loading' => __( 'Loading…', '4wp-social' ),
+						'error'   => __( 'Request failed.', '4wp-social' ),
+						'top'     => __( 'Top 5', '4wp-social' ),
+						'empty'   => __( 'No views this day.', '4wp-social' ),
+					),
+				)
+			);
 		}
 		if ( false !== strpos( $hook_suffix, self::CALENDAR_SLUG ) ) {
 			$day_js = FORWP_SOCIAL_PATH . 'assets/calendar.js';
@@ -632,6 +674,7 @@ final class Admin_Menu {
 			'save_redirect'    => self::SAVE_REDIRECT,
 			'fetch_analytics'  => self::FETCH_ANALYTICS,
 			'import_analytics' => self::IMPORT_ANALYTICS,
+			'save_ga4'         => self::SAVE_GA4,
 		);
 	}
 

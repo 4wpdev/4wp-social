@@ -61,7 +61,7 @@ class AnalyticsTest extends TestCase {
 	}
 
 	public function test_import_rejects_wrong_extension(): void {
-		$result = Analytics::import( 'linkedin.com', __FILE__, 'export.xlsx' );
+		$result = Analytics::import( 'linkedin.com', __FILE__, 'export.pdf' );
 
 		$this->assertInstanceOf( WP_Error::class, $result );
 		$this->assertNull( Analytics::snapshot( 'linkedin.com' ) );
