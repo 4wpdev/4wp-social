@@ -12,6 +12,7 @@ use ForWP\Social\Admin\Admin_Menu;
 use ForWP\Social\Admin\Redirect_Check;
 use ForWP\Social\Auth\Credentials_Store;
 use ForWP\Social\Auth\OAuth_Controller;
+use ForWP\Social\Auth\TikTok_OAuth_Provider;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -205,6 +206,10 @@ $forwp_social_icons   = array(
 					<?php elseif ( isset( Admin_Menu::notices()[ $notice ] ) ) : ?>
 						<div class="forwp-social-callout forwp-social-callout--ok" role="status"><p>&#10003; <?php echo esc_html( Admin_Menu::notices()[ $notice ] ); ?></p></div>
 					<?php endif; ?>
+				<?php endif; ?>
+
+				<?php if ( TikTok_OAuth_Provider::SLUG === $forwp_social_key ) : ?>
+					<p class="forwp-social-muted"><?php esc_html_e( 'Requested permissions:', '4wp-social' ); ?> <code><?php echo esc_html( implode( ', ', TikTok_OAuth_Provider::requested_scopes() ) ); ?></code></p>
 				<?php endif; ?>
 
 				<?php if ( $forwp_social_conn['connected'] ) : ?>

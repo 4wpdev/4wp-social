@@ -28,6 +28,7 @@ final class TikTok_Source implements Analytics_Source_Interface, Analytics_Cumul
 	private const USER_FIELDS  = 'open_id,display_name,username,avatar_url,profile_deep_link,follower_count,following_count,likes_count,video_count';
 	private const VIDEO_FIELDS = 'id,title,video_description,create_time,share_url,duration,cover_image_url,view_count,like_count,comment_count,share_count';
 	private const VIDEO_LIMIT  = 100;
+	private const SCOPES       = array( 'user.info.profile', 'user.info.stats', 'video.list' );
 
 	/**
 	 * {@inheritDoc}
@@ -54,13 +55,22 @@ final class TikTok_Source implements Analytics_Source_Interface, Analytics_Cumul
 	 * {@inheritDoc}
 	 */
 	public function note(): string {
-		return __( 'Account totals and the last 100 videos. TikTok gives lifetime counters only, so daily numbers start with the first collection. Needs the user.info.profile, user.info.stats and video.list scopes (Display API) in the TikTok app, then Reconnect.', '4wp-social' );
+		return __( 'Account totals and the last 100 videos. TikTok gives lifetime counters only, so daily numbers start with the first collection. Needs the user.info.profile, user.info.stats and video.list scopes (Display API) in the TikTok app; turn them on in Platforms → TikTok → step 2, then Reconnect.', '4wp-social' );
 	}
 
 	/**
 	 * {@inheritDoc}
 	 */
 	public function fetch() {
+		$missing = $this->missing_scopes();
+		if ( $missing ) {
+			return new WP_Error(
+				'forwp_social_tiktok_scopes',
+				/* translators: %s: comma-separated TikTok scopes. */
+				sprintf( __( 'TikTok connection lacks the scopes: %s. Add them to the TikTok app, turn them on in Platforms → TikTok → step 2, then Reconnect.', '4wp-social' ), implode( ', ', $missing ) )
+			);
+		}
+
 		$token = OAuth_Controller::instance()->get_access_token( $this->slug() );
 		if ( is_wp_error( $token ) ) {
 			return $token;
@@ -72,6 +82,20 @@ final class TikTok_Source implements Analytics_Source_Interface, Analytics_Cumul
 			'user'   => Analytics::part( $this->unwrap( Http::request( 'GET', self::API . '/user/info/?fields=' . self::USER_FIELDS, array( 'headers' => $headers ) ) ) ),
 			'videos' => Analytics::part( $this->videos( $headers ) ),
 		);
+	}
+
+	/**
+	 * Analytics scopes the connected token was not granted.
+	 *
+	 * @return array<string>
+	 */
+	private function missing_scopes(): array {
+		$granted = (string) OAuth_Controller::instance()->connection_details( $this->slug() )['scope'];
+		if ( '' === $granted ) {
+			return array(); // Older tokens without the stored scope: let the API answer.
+		}
+
+		return array_values( array_diff( self::SCOPES, array_map( 'trim', explode( ',', $granted ) ) ) );
 	}
 
 	/**
@@ -234,7 +258,8 @@ final class TikTok_Source implements Analytics_Source_Interface, Analytics_Cumul
 			}
 			$videos = array_merge( $videos, (array) ( $page['videos'] ?? array() ) );
 			$cursor = (int) ( $page['cursor'] ?? 0 );
-		} while ( ! empty( $page['has_more'] ) && $cursor && count( $videos ) < self::VIDEO_LIMIT );
+			$total  = count( $videos );
+		} while ( ! empty( $page['has_more'] ) && $cursor && $total < self::VIDEO_LIMIT );
 
 		return array( 'videos' => $videos );
 	}

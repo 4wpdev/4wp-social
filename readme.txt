@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.7.0
+Stable tag: 0.7.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,11 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.7.2 =
+* TikTok: the analytics scopes (user.info.profile, user.info.stats, video.list) are requested only when turned on in Platforms → TikTok → step 2. Before, every connect asked for them and TikTok refused the login with a "scope" error when the approved app lacked them.
+* TikTok: step 3 shows the permissions the next connect will request.
+* TikTok analytics: a clear message names the missing scopes instead of an API error.
 
 = 0.7.0 =
 * Analytics: daily metrics are stored in their own table (`forwp_social_metrics`). The first run loads a year of YouTube history, then every run rewrites the last 7 days.

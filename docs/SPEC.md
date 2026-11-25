@@ -57,6 +57,7 @@ Post meta `_forwp_social_status`:
 - Джерело для панелі реалізує `Analytics_Daily_Interface`: `daily()`, `metrics()`, `history_days()`, `items()`, `item_columns()`.
 - Панель `views/partials/analytics-panel.php`: період (`range` = 7d | 28d | 90d | 365d | month | prev_month | custom + `from`/`to`), плитки з ▲/▼ проти попереднього періоду такої ж довжини, діаграма з tooltip і топ-5 за день, таблиця з сортуванням (за замовчуванням — дата публікації, нові зверху).
 - REST `GET forwp-social/v1/analytics/items` — елементи за період, кеш на добу (скидається після кожного collect).
+- TikTok: `TikTok_OAuth_Provider::REQUIRED_SCOPES` (`user.info.basic`, `video.publish`) — завжди; `OPTIONAL_SCOPES` (`user.info.profile`, `user.info.stats`, `video.list`) — лише з увімкненими чекбоксами (`Credentials_Store` extra `scope_*`). Крок 3 показує `requested_scopes()`. `TikTok_Source::fetch()` без потрібних scopes повертає помилку з їх переліком (ADR 0007).
 - Джерела з загальними сумами (TikTok) реалізують `Analytics_Cumulative_Interface::snapshot()`: щоденний знімок пишеться як `platform:raw` (акаунт + кожне відео), приріст між знімками — рядком за вчора; відео за період — різниця знімків на початок і кінець періоду. Мета відео — опція `forwp_social_items_meta_{slug}`.
 - Змішане джерело (Facebook, `history_days() > 1`): рахунок по днях — з API (insights сторінки, частинами по 90 днів), знімки лише для Reels; приріст рахунку зі знімків не пишеться.
 - Instagram — теж змішане: по днях лише reach (time_series, до 30 днів за запит), знімки — для постів.
