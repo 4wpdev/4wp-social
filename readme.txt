@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.7.2
+Stable tag: 0.7.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,11 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.7.3 =
+* TikTok: a TikTok panel in the post box, as the TikTok Content Sharing Guidelines require for the Direct Post audit — account name and avatar, video preview, editable title, "Who can view this video" with no default, Comment / Duet / Stitch off by default (greyed out when the account disables them), "Disclose video content" with Your brand / Branded content and their labels, consent text with the Music Usage Confirmation (and Branded Content Policy) links, max video length check.
+* TikTok: posts only with the choices made in the panel. The plugin no longer picks the privacy itself; a TikTok job without choices fails with a hint to publish from the post box.
+* REST `GET forwp-social/v1/tiktok/creator`.
 
 = 0.7.2 =
 * TikTok: the analytics scopes (user.info.profile, user.info.stats, video.list) are requested only when turned on in Platforms → TikTok → step 2. Before, every connect asked for them and TikTok refused the login with a "scope" error when the approved app lacked them.

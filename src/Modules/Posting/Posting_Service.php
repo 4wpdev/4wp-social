@@ -9,6 +9,7 @@ namespace ForWP\Social\Modules\Posting;
 
 use ForWP\Social\Contracts\Media_Source_Interface;
 use ForWP\Social\Core\Publish_Result;
+use ForWP\Social\Modules\Posting\Adapters\TikTok_Adapter;
 use WP_Error;
 
 defined( 'ABSPATH' ) || exit;
@@ -76,6 +77,7 @@ final class Posting_Service {
 	 * @return array<string, array{job_id: int, skipped: string}>
 	 */
 	public function enqueue_manual( int $post_id, array $platforms, array $options = array(), bool $force = false ): array {
+		$tiktok  = TikTok_Adapter::sanitize_options( (array) ( $options['tiktok'] ?? array() ) );
 		$options = Post_Reader::sanitize( $options );
 		$done    = $this->published_map( $post_id );
 		$report  = array();
@@ -96,7 +98,7 @@ final class Posting_Service {
 			}
 
 			$report[ $platform ] = array(
-				'job_id'  => '' === $reason ? $this->jobs->create( $post_id, $platform, self::not_before_publish( $post_id, time() ), Job_Repository::SOURCE_POST, $options ) : 0,
+				'job_id'  => '' === $reason ? $this->jobs->create( $post_id, $platform, self::not_before_publish( $post_id, time() ), Job_Repository::SOURCE_POST, self::with_tiktok( $options, $platform, $tiktok ) ) : 0,
 				'skipped' => $reason,
 			);
 		}
@@ -157,7 +159,9 @@ final class Posting_Service {
 				$reason = 'in_queue';
 			}
 
-			$job_id = '' === $reason ? $this->jobs->create( $post_id, $platform, $run_at, Job_Repository::SOURCE_PACKAGE, array_intersect_key( Post_Reader::sanitize( $options ), array( 'privacy' => true ) ) ) : 0;
+			$job_options = array_intersect_key( Post_Reader::sanitize( $options ), array( 'privacy' => true ) );
+			$job_options = self::with_tiktok( $job_options, $platform, TikTok_Adapter::sanitize_options( (array) ( $options['tiktok'] ?? array() ) ) );
+			$job_id      = '' === $reason ? $this->jobs->create( $post_id, $platform, $run_at, Job_Repository::SOURCE_PACKAGE, $job_options ) : 0;
 
 			$report[ $platform ] = array(
 				'job_id'  => $job_id,
@@ -208,6 +212,10 @@ final class Posting_Service {
 		if ( is_wp_error( $package ) ) {
 			$this->fail( $job, Publish_Result::failed( $package->get_error_message() ) );
 			return;
+		}
+		$tiktok = Job_Repository::options( $job )['tiktok'] ?? array();
+		if ( is_array( $tiktok ) && $tiktok ) {
+			$package = $package->with( array( 'tiktok' => $tiktok ) );
 		}
 
 		if ( ! $polling ) {
@@ -402,5 +410,21 @@ final class Posting_Service {
 		$latest = $this->jobs->latest( $post_id, $platform );
 
 		return $latest && in_array( $latest->status, array( Job_Repository::QUEUED, Job_Repository::PROCESSING ), true );
+	}
+
+	/**
+	 * Add the author's TikTok choices to a TikTok job.
+	 *
+	 * @param array<string, mixed> $options  Job options.
+	 * @param string               $platform Platform key.
+	 * @param array<string, mixed> $tiktok   TikTok_Adapter::sanitize_options() result.
+	 * @return array<string, mixed>
+	 */
+	private static function with_tiktok( array $options, string $platform, array $tiktok ): array {
+		if ( TikTok_Adapter::SLUG === $platform && $tiktok ) {
+			$options['tiktok'] = $tiktok;
+		}
+
+		return $options;
 	}
 }

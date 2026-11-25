@@ -3,6 +3,156 @@
 	'use strict';
 
 	var i18n = ( window.forwpSocialMetabox || {} ).i18n || {};
+	var tt = ( window.forwpSocialMetabox || {} ).tiktok || {};
+	var TIKTOK = 'tiktok.com';
+
+	// TikTok panel (Content Sharing Guidelines): shown while TikTok is ticked.
+	function tiktokChecked( $box ) {
+		return $box.find( 'input[name="forwp_social_platforms[]"][value="' + TIKTOK + '"]' ).is( ':checked' );
+	}
+
+	function tiktokField( $box, name ) {
+		return $box.find( '.forwp-social-tiktok [data-tiktok="' + name + '"]' );
+	}
+
+	function tiktokSource( $box ) {
+		return $box.data( 'source' ) || $box.find( 'input[name=forwp_social_source]:checked' ).val() || 'post';
+	}
+
+	function tiktokLoad( $box ) {
+		var $panel = $box.find( '.forwp-social-tiktok' );
+		var $msg = $panel.find( '.forwp-social-tiktok__msg' ).text( tt.loading );
+		$panel.data( 'creator', null );
+		wp.apiFetch( {
+			path: '/forwp-social/v1/tiktok/creator?post_id=' + postId( $panel ) +
+				'&source=' + encodeURIComponent( tiktokSource( $box ) ) +
+				'&video_id=' + ( parseInt( $box.find( '[data-field="video_id"]' ).val(), 10 ) || 0 ),
+		} ).then( function ( info ) {
+			$panel.data( 'creator', info );
+			$msg.text( '' );
+			var name = info.nickname || info.username;
+			$panel.find( '.forwp-social-tiktok__name' ).text( info.username ? name + ' (@' + info.username + ')' : name );
+			if ( info.avatar ) {
+				$panel.find( '.forwp-social-tiktok__avatar' ).attr( 'src', info.avatar ).prop( 'hidden', false );
+			}
+
+			var $select = tiktokField( $box, 'privacy_level' );
+			$select.find( 'option:not([value=""])' ).remove();
+			( info.privacy_options || [] ).forEach( function ( level ) {
+				$select.append( $( '<option/>' ).val( level ).text( ( tt.privacy || {} )[ level ] || level ) );
+			} );
+			$select.val( '' );
+
+			[ 'comment', 'duet', 'stitch' ].forEach( function ( key ) {
+				var off = !! info[ key + '_disabled' ];
+				tiktokField( $box, 'allow_' + key ).prop( 'checked', false ).prop( 'disabled', off )
+					.closest( 'label' ).toggleClass( 'is-disabled', off ).attr( 'title', off ? tt.disabledHint : '' );
+			} );
+
+			var $title = tiktokField( $box, 'title' );
+			if ( ! $title.val() ) {
+				$title.val( info.caption || '' );
+			}
+
+			var $video = $panel.find( '.forwp-social-tiktok__preview' );
+			if ( info.video_url ) {
+				$video.attr( 'src', info.video_url ).prop( 'hidden', false );
+			} else {
+				$video.prop( 'hidden', true ).removeAttr( 'src' );
+				$msg.text( tt.noVideo );
+			}
+			if ( info.max_duration && info.duration > info.max_duration ) {
+				$msg.text( String( tt.tooLong ).replace( '%d', info.max_duration ) );
+			}
+			tiktokSync( $box );
+		} ).catch( function ( err ) {
+			$msg.text( ( err && err.message ) || i18n.failed );
+		} );
+	}
+
+	function tiktokChoice( $box ) {
+		var choice = { consent: 1 };
+		[ 'title', 'privacy_level' ].forEach( function ( name ) {
+			choice[ name ] = tiktokField( $box, name ).val();
+		} );
+		[ 'allow_comment', 'allow_duet', 'allow_stitch', 'commercial', 'brand_organic', 'brand_content' ].forEach( function ( name ) {
+			choice[ name ] = tiktokField( $box, name ).is( ':checked' ) ? 1 : 0;
+		} );
+		return choice;
+	}
+
+	function tiktokProblem( $box ) {
+		var info = $box.find( '.forwp-social-tiktok' ).data( 'creator' );
+		var choice = tiktokChoice( $box );
+		if ( ! info ) {
+			return tt.loading;
+		}
+		if ( info.max_duration && info.duration > info.max_duration ) {
+			return String( tt.tooLong ).replace( '%d', info.max_duration );
+		}
+		if ( ! choice.privacy_level ) {
+			return tt.needPrivacy;
+		}
+		if ( choice.commercial && ! choice.brand_organic && ! choice.brand_content ) {
+			return tt.needBrand;
+		}
+		if ( choice.commercial && choice.brand_content && 'SELF_ONLY' === choice.privacy_level ) {
+			return tt.privateBrand;
+		}
+		return '';
+	}
+
+	function tiktokLink( text, url ) {
+		return $( '<a/>' ).attr( { href: url, target: '_blank', rel: 'noopener' } ).text( text ).prop( 'outerHTML' );
+	}
+
+	// Disclosure, branded-content privacy rule, label note, consent text, publish button.
+	function tiktokSync( $box ) {
+		var $panel = $box.find( '.forwp-social-tiktok' );
+		var choice = tiktokChoice( $box );
+		var branded = !! ( choice.commercial && choice.brand_content );
+
+		$panel.find( '.forwp-social-tiktok__brand' ).prop( 'hidden', ! choice.commercial );
+
+		var $private = tiktokField( $box, 'privacy_level' ).find( 'option[value="SELF_ONLY"]' );
+		$private.prop( 'disabled', branded ).attr( 'title', branded ? tt.privateBrand : '' );
+		if ( branded && 'SELF_ONLY' === choice.privacy_level ) {
+			tiktokField( $box, 'privacy_level' ).val( '' );
+		}
+
+		var label = '';
+		if ( branded ) {
+			label = tt.labelPaid;
+		} else if ( choice.commercial && choice.brand_organic ) {
+			label = tt.labelOrganic;
+		}
+		$panel.find( '.forwp-social-tiktok__label' ).text( label );
+
+		var music = tiktokLink( tt.music, tt.musicUrl );
+		var consent = branded ?
+			String( tt.consentBrand ).replace( '%1$s', tiktokLink( tt.bcPolicy, tt.bcPolicyUrl ) ).replace( '%2$s', music ) :
+			String( tt.consent ).replace( '%s', music );
+		$panel.find( '.forwp-social-tiktok__consent' ).html( consent );
+
+		if ( tiktokChecked( $box ) ) {
+			$box.find( '.forwp-social-publish' ).prop( 'disabled', !! tiktokProblem( $box ) );
+		}
+	}
+
+	$( document ).on( 'change', 'input[name="forwp_social_platforms[]"][value="' + TIKTOK + '"], input[name=forwp_social_source]', function () {
+		var $box = $( this ).closest( '.forwp-social-box' );
+		var on = tiktokChecked( $box );
+		$box.find( '.forwp-social-tiktok' ).prop( 'hidden', ! on );
+		if ( on ) {
+			tiktokLoad( $box );
+		} else {
+			$box.find( '.forwp-social-publish' ).prop( 'disabled', false );
+		}
+	} );
+
+	$( document ).on( 'change input', '.forwp-social-tiktok [data-tiktok]', function () {
+		tiktokSync( $( this ).closest( '.forwp-social-box' ) );
+	} );
 
 	$( document ).on( 'click', '.forwp-social-pick', function ( e ) {
 		e.preventDefault();
@@ -190,6 +340,15 @@
 		$box.find( '[data-field]' ).each( function () {
 			options[ $( this ).data( 'field' ) ] = $( this ).val();
 		} );
+
+		if ( tiktokChecked( $box ) ) {
+			var problem = tiktokProblem( $box );
+			if ( problem ) {
+				$out.text( problem );
+				return;
+			}
+			options.tiktok = tiktokChoice( $box );
+		}
 
 		var $button = $( this ).prop( 'disabled', true ).text( i18n.working );
 

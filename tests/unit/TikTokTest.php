@@ -61,4 +61,41 @@ class TikTokTest extends TestCase {
 		$long = new Media_Package( array( 'description' => str_repeat( 'я', 3000 ) ) );
 		$this->assertSame( 2200, mb_strlen( TikTok_Adapter::caption( $long ) ) );
 	}
+
+	public function test_choice_needs_privacy_and_consent(): void {
+		$this->assertSame( array(), TikTok_Adapter::sanitize_options( array( 'privacy_level' => 'SELF_ONLY' ) ) );
+		$this->assertSame( array(), TikTok_Adapter::sanitize_options( array( 'privacy_level' => '', 'consent' => 1 ) ) );
+		$this->assertSame( array(), TikTok_Adapter::sanitize_options( array( 'privacy_level' => 'EVERYONE', 'consent' => 1 ) ) );
+
+		$choice = TikTok_Adapter::sanitize_options(
+			array(
+				'privacy_level' => 'SELF_ONLY',
+				'consent'       => 1,
+				'allow_comment' => 1,
+				'brand_content' => 1,
+			)
+		);
+		$this->assertSame( 'SELF_ONLY', $choice['privacy_level'] );
+		$this->assertTrue( $choice['allow_comment'] );
+		$this->assertFalse( $choice['allow_duet'] );
+		$this->assertFalse( $choice['brand_content'], 'Brand toggles count only with the disclosure on.' );
+	}
+
+	public function test_validate_choice(): void {
+		$creator = array( 'privacy_level_options' => array( 'PUBLIC_TO_EVERYONE', 'SELF_ONLY' ) );
+
+		$this->assertNotSame( '', TikTok_Adapter::validate_choice( array(), $creator ) );
+		$this->assertSame( '', TikTok_Adapter::validate_choice( TikTok_Adapter::sanitize_options( array( 'privacy_level' => 'SELF_ONLY', 'consent' => 1 ) ), $creator ) );
+		$this->assertNotSame( '', TikTok_Adapter::validate_choice( TikTok_Adapter::sanitize_options( array( 'privacy_level' => 'FOLLOWER_OF_CREATOR', 'consent' => 1 ) ), $creator ) );
+
+		$branded_private = TikTok_Adapter::sanitize_options(
+			array(
+				'privacy_level' => 'SELF_ONLY',
+				'consent'       => 1,
+				'commercial'    => 1,
+				'brand_content' => 1,
+			)
+		);
+		$this->assertNotSame( '', TikTok_Adapter::validate_choice( $branded_private, $creator ) );
+	}
 }

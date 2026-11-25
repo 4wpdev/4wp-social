@@ -18,6 +18,7 @@ use ForWP\Social\Rest\Rest_Analytics;
 use ForWP\Social\Rest\Rest_Jobs;
 use ForWP\Social\Rest\Rest_Link;
 use ForWP\Social\Rest\Rest_Oauth;
+use ForWP\Social\Rest\Rest_TikTok;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -65,6 +66,7 @@ final class Plugin {
 		Rest_Jobs::register();
 		Rest_Link::register();
 		Rest_Analytics::register();
+		Rest_TikTok::register();
 		\ForWP\Social\Modules\Analytics\Analytics::boot();
 
 		// Modules register on init so third-party plugins can add theirs via forwp_social_modules.

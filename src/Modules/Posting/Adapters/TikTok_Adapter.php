@@ -18,7 +18,9 @@ defined( 'ABSPATH' ) || exit;
 
 /**
  * Asynchronous: publish() returns processing with publish_id, check() polls until PUBLISH_COMPLETE.
- * Unaudited apps can only post SELF_ONLY (private) until TikTok approves the app.
+ * Posts only with the author's explicit choices from the post box (privacy, interactions,
+ * commercial content disclosure, consent) — TikTok Content Sharing Guidelines.
+ * Unaudited apps can post only to a private account.
  */
 final class TikTok_Adapter implements Platform_Adapter_Interface {
 
@@ -32,6 +34,11 @@ final class TikTok_Adapter implements Platform_Adapter_Interface {
 	/**
 	 * Package privacy → TikTok privacy_level.
 	 */
+	/**
+	 * TikTok privacy levels.
+	 */
+	public const PRIVACY_LEVELS = array( 'PUBLIC_TO_EVERYONE', 'MUTUAL_FOLLOW_FRIENDS', 'FOLLOWER_OF_CREATOR', 'SELF_ONLY' );
+
 	private const PRIVACY_MAP = array(
 		'public'    => 'PUBLIC_TO_EVERYONE',
 		'followers' => 'FOLLOWER_OF_CREATOR',
@@ -68,19 +75,21 @@ final class TikTok_Adapter implements Platform_Adapter_Interface {
 			return Publish_Result::failed( $creator->get_error_message() );
 		}
 
-		$options = array_map( 'strval', (array) ( $creator['privacy_level_options'] ?? array() ) );
-		$privacy = self::resolve_privacy( $package->privacy(), $options );
-		if ( '' === $privacy ) {
-			return Publish_Result::failed( __( 'TikTok returned no privacy options for this account.', '4wp-social' ), false );
+		$choice = $package->tiktok();
+		$error  = self::validate_choice( $choice, $creator );
+		if ( '' !== $error ) {
+			return Publish_Result::failed( $error, false );
 		}
 
-		$entry     = $package->entry();
+		$title     = trim( (string) $choice['title'] );
 		$post_info = array(
-			'title'           => self::caption( $package ),
-			'privacy_level'   => $privacy,
-			'disable_comment' => ! empty( $entry['disable_comment'] ),
-			'disable_duet'    => ! empty( $entry['disable_duet'] ),
-			'disable_stitch'  => ! empty( $entry['disable_stitch'] ),
+			'title'                => '' !== $title ? $title : self::caption( $package ),
+			'privacy_level'        => (string) $choice['privacy_level'],
+			'disable_comment'      => empty( $choice['allow_comment'] ) || ! empty( $creator['comment_disabled'] ),
+			'disable_duet'         => empty( $choice['allow_duet'] ) || ! empty( $creator['duet_disabled'] ),
+			'disable_stitch'       => empty( $choice['allow_stitch'] ) || ! empty( $creator['stitch_disabled'] ),
+			'brand_content_toggle' => ! empty( $choice['brand_content'] ),
+			'brand_organic_toggle' => ! empty( $choice['brand_organic'] ),
 		);
 		if ( $package->cover_ms() > 0 ) {
 			$post_info['video_cover_timestamp_ms'] = $package->cover_ms();
@@ -103,13 +112,7 @@ final class TikTok_Adapter implements Platform_Adapter_Interface {
 			return Publish_Result::failed( $uploaded->get_error_message() );
 		}
 
-		$note = '';
-		if ( ( self::PRIVACY_MAP[ $package->privacy() ] ?? 'PUBLIC_TO_EVERYONE' ) !== $privacy ) {
-			/* translators: %s: TikTok privacy level. */
-			$note = sprintf( __( 'Posted as %s: the app is not audited or the account does not allow the requested privacy.', '4wp-social' ), $privacy );
-		}
-
-		return Publish_Result::processing( $publish_id, $note );
+		return Publish_Result::processing( $publish_id, __( 'Sent to TikTok. Processing may take a few minutes before the video appears on the profile.', '4wp-social' ) );
 	}
 
 	public function check( string $reference, Media_Package $package ): Publish_Result {
@@ -139,6 +142,53 @@ final class TikTok_Adapter implements Platform_Adapter_Interface {
 			default:
 				return Publish_Result::processing( $reference, (string) ( $status['status'] ?? '' ) );
 		}
+	}
+
+	/**
+	 * Author's TikTok choices from the post box. Empty without a privacy level or consent.
+	 *
+	 * @param array<string, mixed> $input Raw input.
+	 * @return array<string, mixed>
+	 */
+	public static function sanitize_options( array $input ): array {
+		$privacy = strtoupper( sanitize_key( (string) ( $input['privacy_level'] ?? '' ) ) );
+		if ( ! in_array( $privacy, self::PRIVACY_LEVELS, true ) || empty( $input['consent'] ) ) {
+			return array();
+		}
+		$title = sanitize_textarea_field( (string) ( $input['title'] ?? '' ) );
+
+		return array(
+			'privacy_level' => $privacy,
+			'title'         => function_exists( 'mb_substr' ) ? mb_substr( $title, 0, self::CAPTION_MAX ) : substr( $title, 0, self::CAPTION_MAX ),
+			'allow_comment' => ! empty( $input['allow_comment'] ),
+			'allow_duet'    => ! empty( $input['allow_duet'] ),
+			'allow_stitch'  => ! empty( $input['allow_stitch'] ),
+			'brand_organic' => ! empty( $input['commercial'] ) && ! empty( $input['brand_organic'] ),
+			'brand_content' => ! empty( $input['commercial'] ) && ! empty( $input['brand_content'] ),
+			'consent'       => true,
+		);
+	}
+
+	/**
+	 * Why the choices cannot be posted now ('' = ok).
+	 *
+	 * @param array<string, mixed> $choice  sanitize_options() result.
+	 * @param array<string, mixed> $creator creator_info data.
+	 */
+	public static function validate_choice( array $choice, array $creator ): string {
+		if ( empty( $choice['privacy_level'] ) || empty( $choice['consent'] ) ) {
+			return __( 'TikTok settings were not chosen. Open the post, tick TikTok, choose who can view the video and publish from the post box.', '4wp-social' );
+		}
+		$options = array_map( 'strval', (array) ( $creator['privacy_level_options'] ?? array() ) );
+		if ( ! in_array( (string) $choice['privacy_level'], $options, true ) ) {
+			/* translators: %s: TikTok privacy level. */
+			return sprintf( __( 'The TikTok account does not allow the privacy "%s" now. Choose another option in the post box.', '4wp-social' ), (string) $choice['privacy_level'] );
+		}
+		if ( ! empty( $choice['brand_content'] ) && 'SELF_ONLY' === $choice['privacy_level'] ) {
+			return __( 'Branded content visibility cannot be set to private.', '4wp-social' );
+		}
+
+		return '';
 	}
 
 	/**

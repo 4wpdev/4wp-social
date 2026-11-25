@@ -226,7 +226,7 @@ final class Post_Metabox {
 			'forwp-social-metabox',
 			'forwpSocialMetabox',
 			array(
-				'i18n' => array(
+				'i18n'   => array(
 					'choose'       => __( 'Choose file', '4wp-social' ),
 					'pick'         => __( 'Select at least one platform.', '4wp-social' ),
 					'queued'       => __( 'Queued. Status updates every minute.', '4wp-social' ),
@@ -252,6 +252,32 @@ final class Post_Metabox {
 					'markedDone'   => __( 'posted', '4wp-social' ),
 					'notifySent'   => __( 'Reminder sent.', '4wp-social' ),
 					'dateSaved'    => __( 'Date saved.', '4wp-social' ),
+				),
+				'tiktok' => array(
+					'privacy'      => array(
+						'PUBLIC_TO_EVERYONE'    => __( 'Everyone', '4wp-social' ),
+						'MUTUAL_FOLLOW_FRIENDS' => __( 'Friends', '4wp-social' ),
+						'FOLLOWER_OF_CREATOR'   => __( 'Followers', '4wp-social' ),
+						'SELF_ONLY'             => __( 'Only me', '4wp-social' ),
+					),
+					'loading'      => __( 'Loading the TikTok account…', '4wp-social' ),
+					'disabledHint' => __( 'Turned off in the TikTok account settings.', '4wp-social' ),
+					'privateBrand' => __( 'Branded content visibility cannot be set to private.', '4wp-social' ),
+					'needPrivacy'  => __( 'TikTok: choose who can view the video.', '4wp-social' ),
+					'needBrand'    => __( 'TikTok: you need to indicate if your content promotes yourself, a third party, or both.', '4wp-social' ),
+					/* translators: %d: maximum video length in seconds. */
+					'tooLong'      => __( 'TikTok: the video is longer than this account may post (%d s).', '4wp-social' ),
+					'noVideo'      => __( 'No video preview: choose a video first.', '4wp-social' ),
+					'labelOrganic' => __( "Your photo/video will be labeled as 'Promotional content'.", '4wp-social' ),
+					'labelPaid'    => __( "Your photo/video will be labeled as 'Paid partnership'.", '4wp-social' ),
+					/* translators: %s: link "Music Usage Confirmation". */
+					'consent'      => __( "By posting, you agree to TikTok's %s.", '4wp-social' ),
+					/* translators: 1: link "Branded Content Policy", 2: link "Music Usage Confirmation". */
+					'consentBrand' => __( "By posting, you agree to TikTok's %1\$s and %2\$s.", '4wp-social' ),
+					'music'        => __( 'Music Usage Confirmation', '4wp-social' ),
+					'musicUrl'     => 'https://www.tiktok.com/legal/page/global/music-usage-confirmation/en',
+					'bcPolicy'     => __( 'Branded Content Policy', '4wp-social' ),
+					'bcPolicyUrl'  => 'https://www.tiktok.com/legal/page/global/bc-policy/en',
 				),
 			)
 		);

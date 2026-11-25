@@ -409,3 +409,15 @@ details.forwp-social-devmode > summary { margin-bottom: 8px; }
 /* LinkedIn audience: small tables side by side. */
 .forwp-social-an__demo { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .forwp-social-an__demo .forwp-social-an__table { margin: 0; }
+
+/* TikTok panel in the post box (Content Sharing Guidelines). */
+.forwp-social-tiktok { margin: 12px 0; padding: 8px 10px; border: 1px solid #dcdcde; border-radius: 4px; }
+.forwp-social-tiktok legend { padding: 0 4px; font-weight: 600; }
+.forwp-social-tiktok__account { display: flex; align-items: center; gap: 6px; }
+.forwp-social-tiktok__avatar { border-radius: 50%; }
+.forwp-social-tiktok__msg:empty { display: none; }
+.forwp-social-tiktok__msg { color: #b32d2e; }
+.forwp-social-tiktok__preview { display: block; width: 100%; max-height: 320px; background: #000; }
+.forwp-social-tiktok__allow label { margin-right: 10px; }
+.forwp-social-tiktok__allow label.is-disabled { opacity: .5; }
+.forwp-social-tiktok__label { font-style: italic; }

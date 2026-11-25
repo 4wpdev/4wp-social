@@ -12,6 +12,7 @@
  * @var array<string, ForWP\Social\Contracts\Platform_Adapter_Interface>  $adapters
  */
 
+use ForWP\Social\Modules\Posting\Adapters\TikTok_Adapter;
 use ForWP\Social\Modules\Posting\Platform_Icons;
 
 defined( 'ABSPATH' ) || exit;
@@ -82,6 +83,52 @@ $forwp_social_files = array(
 			</li>
 		<?php endforeach; ?>
 	</ul>
+
+	<?php if ( isset( $adapters[ TikTok_Adapter::SLUG ] ) && $adapters[ TikTok_Adapter::SLUG ]->is_ready() ) : ?>
+		<?php // TikTok Content Sharing Guidelines: account, preview, editable title, privacy without default, interactions, disclosure, consent. ?>
+		<fieldset class="forwp-social-tiktok" hidden>
+			<legend><?php esc_html_e( 'TikTok', '4wp-social' ); ?></legend>
+			<p class="forwp-social-tiktok__account">
+				<img class="forwp-social-tiktok__avatar" alt="" width="24" height="24" hidden />
+				<?php esc_html_e( 'Posting to:', '4wp-social' ); ?> <strong class="forwp-social-tiktok__name">…</strong>
+			</p>
+			<p class="forwp-social-tiktok__msg" aria-live="polite"></p>
+			<video class="forwp-social-tiktok__preview" controls muted playsinline preload="metadata" hidden></video>
+			<p>
+				<label for="forwp-social-tiktok-title"><strong><?php esc_html_e( 'Title', '4wp-social' ); ?></strong></label>
+				<textarea class="widefat" rows="3" maxlength="2200" id="forwp-social-tiktok-title" data-tiktok="title"></textarea>
+			</p>
+			<p>
+				<label for="forwp-social-tiktok-privacy"><strong><?php esc_html_e( 'Who can view this video', '4wp-social' ); ?></strong></label>
+				<select class="widefat" id="forwp-social-tiktok-privacy" data-tiktok="privacy_level">
+					<option value=""><?php esc_html_e( '— Select —', '4wp-social' ); ?></option>
+				</select>
+			</p>
+			<p class="forwp-social-tiktok__allow">
+				<strong><?php esc_html_e( 'Allow users to', '4wp-social' ); ?></strong><br />
+				<label><input type="checkbox" data-tiktok="allow_comment" /> <?php esc_html_e( 'Comment', '4wp-social' ); ?></label>
+				<label><input type="checkbox" data-tiktok="allow_duet" /> <?php esc_html_e( 'Duet', '4wp-social' ); ?></label>
+				<label><input type="checkbox" data-tiktok="allow_stitch" /> <?php esc_html_e( 'Stitch', '4wp-social' ); ?></label>
+			</p>
+			<p>
+				<label><input type="checkbox" data-tiktok="commercial" /> <strong><?php esc_html_e( 'Disclose video content', '4wp-social' ); ?></strong></label><br />
+				<span class="description"><?php esc_html_e( 'Turn on to disclose that this video promotes goods or services in exchange for something of value. Your video could promote yourself, a third party, or both.', '4wp-social' ); ?></span>
+			</p>
+			<div class="forwp-social-tiktok__brand" hidden>
+				<p>
+					<label><input type="checkbox" data-tiktok="brand_organic" /> <?php esc_html_e( 'Your brand', '4wp-social' ); ?></label><br />
+					<span class="description"><?php esc_html_e( 'You are promoting yourself or your own business. This video will be classified as Brand Organic.', '4wp-social' ); ?></span>
+				</p>
+				<p>
+					<label><input type="checkbox" data-tiktok="brand_content" /> <?php esc_html_e( 'Branded content', '4wp-social' ); ?></label><br />
+					<span class="description"><?php esc_html_e( 'You are promoting another brand or a third party. This video will be classified as Branded Content.', '4wp-social' ); ?></span>
+				</p>
+				<p class="forwp-social-tiktok__label"></p>
+			</div>
+			<p class="forwp-social-tiktok__consent"></p>
+			<p class="description"><?php esc_html_e( 'After publishing, it may take a few minutes for the video to appear on your TikTok profile. The status is shown next to TikTok above.', '4wp-social' ); ?></p>
+		</fieldset>
+	<?php endif; ?>
 
 	<?php if ( $is_package ) : ?>
 		<p class="forwp-social-source">

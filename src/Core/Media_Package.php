@@ -47,6 +47,7 @@ final class Media_Package {
 			'cover_ms'          => 0,
 			'temp_files'        => array(),
 			'article'           => array(),
+			'tiktok'            => array(),
 		);
 	}
 
@@ -81,6 +82,15 @@ final class Media_Package {
 	 *
 	 * @return array<string, mixed>
 	 */
+	/**
+	 * TikTok choices made by the author in the post box (TikTok_Adapter::sanitize_options()).
+	 *
+	 * @return array<string, mixed>
+	 */
+	public function tiktok(): array {
+		return is_array( $this->data['tiktok'] ?? null ) ? $this->data['tiktok'] : array();
+	}
+
 	public function entry(): array {
 		return is_array( $this->data['entry'] ) ? $this->data['entry'] : array();
 	}
