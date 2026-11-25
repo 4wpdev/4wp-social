@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.7.3
+Stable tag: 0.7.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,9 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.7.4 =
+* Queue: one row per network, grouped under the post. Each row shows the network's own text, a readable status with the full message, planned / started / updated / published dates and its own Run, Retry, Check and Delete. Deleting one network no longer hides the rest of the post.
 
 = 0.7.3 =
 * TikTok: a TikTok panel in the post box, as the TikTok Content Sharing Guidelines require for the Direct Post audit — account name and avatar, video preview, editable title, "Who can view this video" with no default, Comment / Duet / Stitch off by default (greyed out when the account disables them), "Disclose video content" with Your brand / Branded content and their labels, consent text with the Music Usage Confirmation (and Branded Content Policy) links, max video length check.

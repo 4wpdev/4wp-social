@@ -93,4 +93,27 @@
 			}
 		} );
 	} );
+
+	// Queue: accordion rows; click or Enter toggles.
+	function toggleRow( row, event ) {
+		if ( event.target.closest( 'a, button, form' ) ) {
+			return;
+		}
+		row.setAttribute( 'aria-expanded', 'true' === row.getAttribute( 'aria-expanded' ) ? 'false' : 'true' );
+	}
+
+	document.addEventListener( 'click', function ( event ) {
+		var row = event.target.closest( '.forwp-social-queue__job[aria-expanded]' );
+		if ( row ) {
+			toggleRow( row, event );
+		}
+	} );
+
+	document.addEventListener( 'keydown', function ( event ) {
+		var row = event.target.closest && event.target.closest( '.forwp-social-queue__job[aria-expanded]' );
+		if ( row && row === event.target && ( 'Enter' === event.key || ' ' === event.key ) ) {
+			event.preventDefault();
+			toggleRow( row, event );
+		}
+	} );
 } )();

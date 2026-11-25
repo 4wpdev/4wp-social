@@ -246,7 +246,14 @@ final class Admin_Menu {
 		$id = isset( $_POST['property'] ) ? preg_replace( '/\D/', '', sanitize_text_field( wp_unslash( $_POST['property'] ) ) ) : '';
 		update_option( Google_Analytics_Source::PROPERTY_OPTION, $id, false );
 
-		wp_safe_redirect( self::analytics_url( array( 'source' => 'analytics.google.com', 'forwp_social_notice' => 'saved' ) ) );
+		wp_safe_redirect(
+			self::analytics_url(
+				array(
+					'source'              => 'analytics.google.com',
+					'forwp_social_notice' => 'saved',
+				)
+			)
+		);
 		exit;
 	}
 
@@ -590,7 +597,15 @@ final class Admin_Menu {
 			);
 		}
 
-		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'retried' ) + self::queue_filter_arg() ) );
+		wp_safe_redirect(
+			self::tab_url(
+				'queue',
+				array(
+					'forwp_social_notice' => 'retried',
+					'job'                 => (string) $id,
+				) + self::queue_filter_arg()
+			) . '#forwp-social-job-' . $id
+		);
 		exit;
 	}
 
@@ -635,7 +650,17 @@ final class Admin_Menu {
 			Queue::run( $id );
 		}
 
-		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_run' ) + self::queue_filter_arg() ) );
+		// Back to the same row: the queue filter stays "all" so the row is still shown after its status changed.
+		wp_safe_redirect(
+			self::tab_url(
+				'queue',
+				array(
+					'forwp_social_notice' => 'job_run',
+					'job'                 => (string) $id,
+					'filter'              => 'all',
+				)
+			) . '#forwp-social-job-' . $id
+		);
 		exit;
 	}
 
@@ -649,13 +674,14 @@ final class Admin_Menu {
 		check_admin_referer( self::DELETE_JOB . '_' . $id );
 		$this->require_admin();
 
-		$repo = new Job_Repository();
-		$job  = $repo->find( $id );
+		$repo    = new Job_Repository();
+		$job     = $repo->find( $id );
+		$post_id = $job ? (int) $job->post_id : 0;
 		if ( $job && Job_Repository::is_actionable( $job ) ) {
 			$repo->delete( $id );
 		}
 
-		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_deleted' ) + self::queue_filter_arg() ) );
+		wp_safe_redirect( self::tab_url( 'queue', array( 'forwp_social_notice' => 'job_deleted' ) + self::queue_filter_arg() ) . '#forwp-social-post-' . $post_id );
 		exit;
 	}
 
