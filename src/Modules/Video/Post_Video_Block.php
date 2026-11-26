@@ -202,7 +202,8 @@ final class Post_Video_Block {
 	}
 
 	/**
-	 * Card player: poster with a play button; tap plays, tap again pauses (no link to the post).
+	 * Card player: poster with a play button. With a media lightbox: hover previews muted, click opens the lightbox.
+	 * Without one: tap plays, tap again pauses (no link to the post).
 	 *
 	 * @param int $post_id Post id.
 	 */
@@ -220,10 +221,35 @@ final class Post_Video_Block {
 			get_the_title( $post_id )
 		);
 
+		$poster_attr = '' !== $poster ? ' poster="' . esc_url( $poster ) . '"' : '';
+
+		// With a media lightbox (4WP Smart Link): hover = muted preview, click = lightbox with sound.
+		$lightbox = (string) apply_filters(
+			'forwp_media_lightbox_trigger',
+			'',
+			array(
+				'type'     => 'video',
+				'src'      => $src,
+				'title'    => get_the_title( $post_id ),
+				'format'   => 'landscape' === (string) get_post_meta( $post_id, 'video_format', true ) ? 'landscape' : 'short',
+				'label'    => $label,
+				'position' => 'cover',
+				'icon'     => 'play',
+			)
+		);
+		if ( '' !== $lightbox ) {
+			return sprintf(
+				'<figure class="wp-block-video" data-forwp-post-video-preview><video playsinline muted loop preload="none" src="%1$s"%2$s></video>%3$s</figure>',
+				esc_url( $src ),
+				$poster_attr,
+				$lightbox // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped by the lightbox trigger.
+			);
+		}
+
 		return sprintf(
 			'<figure class="wp-block-video"><video playsinline loop preload="none" src="%1$s"%2$s></video><button type="button" class="forwp-post-video__toggle" aria-label="%3$s" aria-pressed="false"><span class="forwp-post-video__icon" aria-hidden="true"></span></button></figure>',
 			esc_url( $src ),
-			'' !== $poster ? ' poster="' . esc_url( $poster ) . '"' : '',
+			$poster_attr,
 			esc_attr( $label )
 		);
 	}

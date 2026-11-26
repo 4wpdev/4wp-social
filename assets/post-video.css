@@ -17,7 +17,7 @@
 	width: 100%;
 	height: auto;
 	border: 0;
-	border-radius: 16px;
+	border-radius: 0;
 	background: #000;
 }
 
@@ -43,7 +43,7 @@
 	width: 100%;
 	max-width: var(--forwp-post-video-max, 400px);
 	aspect-ratio: 9 / 16;
-	border-radius: 16px;
+	border-radius: 0;
 	background: #1d2327;
 	color: #fff;
 	font-weight: 600;
@@ -113,7 +113,7 @@
 	width: 100%;
 	padding: 0;
 	border: 0;
-	border-radius: 16px;
+	border-radius: 0;
 	background: transparent;
 	cursor: pointer;
 }
@@ -173,4 +173,9 @@
 	.is-playing .forwp-post-video__icon {
 		opacity: 0;
 	}
+}
+
+/* Lightbox card: hide the square play icon while the muted preview runs. */
+[data-forwp-post-video-preview].is-previewing .forwp-media-lightbox__play {
+	opacity: 0;
 }

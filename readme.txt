@@ -4,7 +4,7 @@ Tags: youtube, tiktok, cross-posting, social, video
 Requires at least: 6.4
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 0.7.4
+Stable tag: 0.7.5
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -55,6 +55,10 @@ TikTok restricts apps that have not passed its audit to private (SELF_ONLY) post
 No. The editor button works on its own. 4WP Drive adds automatic publishing from `meta.json` packages.
 
 == Changelog ==
+
+= 0.7.5 =
+* Video cards: with a media lightbox (4WP Smart Link 1.5.2+) hover plays a muted preview and a click opens the video with sound in a lightbox; without it, tap to play stays as before.
+* Square corners on video players and cards.
 
 = 0.7.4 =
 * Queue: one row per network, grouped under the post. Each row shows the network's own text, a readable status with the full message, planned / started / updated / published dates and its own Run, Retry, Check and Delete. Deleting one network no longer hides the rest of the post.
